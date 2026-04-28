@@ -3,10 +3,13 @@
 import { cookies } from "next/headers";
 import { AuthResponse, ApiResponse } from "@/types";
 
-export async function login(formData: any) {
-  try {
-    const response = await fetch("http://localhost:8080/api/auth/login", {
-      method: "POST",
+const API_URL = process.env.API_URL || "http://localhost:8080/api";
+ 
+ export async function login(formData: any) {
+   try {
+     const response = await fetch(`${API_URL}/auth/login`, {
+       method: "POST",
+
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });

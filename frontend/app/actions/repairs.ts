@@ -4,12 +4,15 @@ import { cookies } from "next/headers";
 import { ApiResponse, ServiceRequest, InventoryItem } from "@/types";
 import { revalidatePath } from "next/cache";
 
+const API_URL = process.env.API_URL || "http://localhost:8080/api";
+
 export async function getServiceRequests(): Promise<ServiceRequest[]> {
   const token = cookies().get("token")?.value;
 
   try {
-    const response = await fetch("http://localhost:8080/api/service-requests", {
+    const response = await fetch(`${API_URL}/service-requests`, {
       headers: {
+
         "Authorization": `Bearer ${token}`
       },
       next: { revalidate: 0 }
@@ -34,7 +37,7 @@ export async function completeRepair(requestId: string, resolutionDetails: strin
   }
 
   try {
-    const response = await fetch(`http://localhost:8080/api/service-requests/${requestId}/complete`, {
+    const response = await fetch(`${API_URL}/service-requests/${requestId}/complete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -62,7 +65,7 @@ export async function getInventory(): Promise<InventoryItem[]> {
   const token = cookies().get("token")?.value;
 
   try {
-    const response = await fetch("http://localhost:8080/api/inventory", {
+    const response = await fetch(`${API_URL}/inventory`, {
       headers: {
         "Authorization": `Bearer ${token}`
       },

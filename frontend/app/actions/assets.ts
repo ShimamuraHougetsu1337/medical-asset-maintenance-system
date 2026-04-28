@@ -4,19 +4,22 @@ import { cookies } from "next/headers";
 import { Asset, ApiResponse } from "@/types";
 import { revalidatePath } from "next/cache";
 
-/**
- * Server Action to report an asset failure.
- */
-export async function reportAssetFailure(assetId: string, description: string) {
-  const token = cookies().get("token")?.value;
+const API_URL = process.env.API_URL || "http://localhost:8080/api";
+ 
+ /**
+  * Server Action to report an asset failure.
+  */
+ export async function reportAssetFailure(assetId: string, description: string) {
+   const token = cookies().get("token")?.value;
+ 
+   if (!token) {
+     return { success: false, message: "Unauthorized" };
+   }
+ 
+   try {
+     const response = await fetch(`${API_URL}/assets/${assetId}/report-failure`, {
+       method: "POST",
 
-  if (!token) {
-    return { success: false, message: "Unauthorized" };
-  }
-
-  try {
-    const response = await fetch(`http://localhost:8080/api/assets/${assetId}/report-failure`, {
-      method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
@@ -45,8 +48,9 @@ export async function getAssets(): Promise<Asset[]> {
   const token = cookies().get("token")?.value;
 
   try {
-    const response = await fetch("http://localhost:8080/api/assets", {
+    const response = await fetch(`${API_URL}/assets`, {
       headers: {
+
         "Authorization": `Bearer ${token}`
       },
       next: { revalidate: 0 }
