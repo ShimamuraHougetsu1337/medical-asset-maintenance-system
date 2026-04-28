@@ -1,0 +1,50 @@
+"use server";
+
+import { cookies } from "next/headers";
+import { AuthResponse, ApiResponse } from "@/types";
+
+export async function login(formData: any) {
+  try {
+    const response = await fetch("http://localhost:8080/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+
+    const result: ApiResponse<AuthResponse> = await response.json();
+
+    if (response.ok && result.data.token) {
+      // Store token and user info in cookies
+      cookies().set("token", result.data.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24, // 1 day
+        path: "/",
+      });
+
+      cookies().set("user", JSON.stringify({
+        username: result.data.username,
+        role: result.data.role
+      }), {
+        httpOnly: false, // Accessible by client to show user info
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24,
+        path: "/",
+      });
+
+      return { success: true };
+    }
+
+    return { success: false, message: result.message || "Invalid credentials" };
+  } catch (error) {
+    console.error("Login error:", error);
+    return { success: false, message: "Server connection failed" };
+  }
+}
+
+export async function logout() {
+  cookies().delete("token");
+  cookies().delete("user");
+}
