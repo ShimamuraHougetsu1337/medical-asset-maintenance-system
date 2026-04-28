@@ -40,9 +40,18 @@ This system provides a robust platform for tracking medical assets, reporting eq
 - Node.js 18+ & npm
 - MySQL Server 8.0+
 
+### Environment Variables
+The project uses environment variables for sensitive configurations. 
+1. Copy the example file to create your own `.env` file at the root:
+   ```bash
+   cp .env.example .env
+   ```
+2. Adjust the values in `.env` (e.g., `SPRING_DATASOURCE_PASSWORD`, `JWT_SECRET`).
+
 ### Backend Setup
 1. Create a MySQL database named `medical_system`.
-2. Configure database credentials in `backend/src/main/resources/application.yml`.
+2. (Optional) Customize settings in your `.env` file.
+
 3. Navigate to the backend directory:
    ```bash
    cd backend
@@ -65,7 +74,9 @@ This system provides a robust platform for tracking medical assets, reporting eq
    ```bash
    npm run dev
    ```
+   *Note: The frontend will use the `API_URL` defined in your root `.env` file to connect to the backend.*
 4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
 
 ## 👥 Default Accounts (Seed Data)
 Every time the backend starts, the database is reset with these default accounts:
