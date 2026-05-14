@@ -92,6 +92,3 @@ The project follows a modern decoupled architecture:
 - **RESTful API**: Stateless communication between frontend and backend.
 - **Relational Integrity**: Structured entities for Service Logs and Part Usage to ensure data consistency.
 - **Server Actions**: Next.js Server Actions for secure and efficient form submissions.
-
----
-Developed as a showcase for Agentic Coding and Modern Web Architectures.

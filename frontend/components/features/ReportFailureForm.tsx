@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { reportAssetFailure } from "@/app/actions/assets";
+import { reportAssetFailure } from "@/actions/assets";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ const formSchema = z.object({
 });
 
 interface ReportFailureFormProps {
-  assetId: string;
+  assetId: string | number;
   assetName: string;
   onSuccess?: () => void;
 }
@@ -74,6 +74,7 @@ export function ReportFailureForm({ assetId, assetName, onSuccess }: ReportFailu
           </Button>
         }
       />
+
 
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

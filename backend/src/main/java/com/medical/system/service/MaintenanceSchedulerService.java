@@ -1,0 +1,110 @@
+package com.medical.system.service;
+
+import com.medical.system.dto.AssetStatisticsDto;
+import com.medical.system.dto.DashboardStatsDto;
+import com.medical.system.dto.LowStockAlertDto;
+import com.medical.system.model.entity.Asset;
+import com.medical.system.model.entity.MaintenanceSchedule;
+import com.medical.system.model.enums.AssetStatus;
+import com.medical.system.repository.AssetRepository;
+import com.medical.system.repository.InventoryRepository;
+import com.medical.system.repository.MaintenanceScheduleRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Service xử lý các tác vụ tự động (Cron Job) và tổng hợp dữ liệu thống kê cho Dashboard.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class MaintenanceSchedulerService {
+
+    // Ngưỡng cảnh báo tồn kho thấp: <= 10 đơn vị
+    private static final int LOW_STOCK_THRESHOLD = 10;
+
+    private final AssetRepository assetRepository;
+    private final InventoryRepository inventoryRepository;
+    private final MaintenanceScheduleRepository maintenanceScheduleRepository;
+
+    /**
+     * Cron Job chạy lúc 00:00 mỗi ngày.
+     * Quét toàn bộ Asset có nextMaintenanceDate <= ngày hôm nay,
+     * tự động tạo MaintenanceSchedule mới cho các asset đó.
+     */
+    @Scheduled(cron = "0 0 0 * * *")
+    @Transactional
+    public void generateMaintenanceSchedules() {
+        log.info("=== [CRON] Bắt đầu quét lịch bảo trì - {}", LocalDate.now());
+
+        List<Asset> assetsToSchedule = assetRepository.findByNextMaintenanceDateLessThanEqual(LocalDate.now());
+
+        if (assetsToSchedule.isEmpty()) {
+            log.info("[CRON] Không có thiết bị nào đến hạn bảo trì hôm nay.");
+            return;
+        }
+
+        for (Asset asset : assetsToSchedule) {
+            MaintenanceSchedule schedule = MaintenanceSchedule.builder()
+                    .asset(asset)
+                    .scheduledDate(LocalDate.now())
+                    .notes("Lịch bảo trì tự động được tạo bởi hệ thống cho thiết bị: " + asset.getName())
+                    .build();
+
+            maintenanceScheduleRepository.save(schedule);
+
+            // Cập nhật lịch bảo trì tiếp theo sang 90 ngày sau (chu kỳ bảo trì định kỳ)
+            asset.setNextMaintenanceDate(LocalDate.now().plusDays(90));
+            assetRepository.save(asset);
+
+            log.info("[CRON] Đã tạo lịch bảo trì cho: {} (ID: {})", asset.getName(), asset.getId());
+        }
+
+        log.info("=== [CRON] Hoàn thành. Đã tạo {} lịch bảo trì.", assetsToSchedule.size());
+    }
+
+    /**
+     * Trả về tổng hợp thống kê cho Dashboard Manager:
+     * - Số lượng thiết bị theo từng trạng thái (dữ liệu Pie Chart)
+     * - Danh sách linh kiện sắp hết hàng (Low Stock Alerts)
+     */
+    @Transactional(readOnly = true)
+    public DashboardStatsDto getDashboardStats() {
+
+        // --- Thống kê Asset theo trạng thái ---
+        long available = assetRepository.countByStatus(AssetStatus.AVAILABLE);
+        long broken = assetRepository.countByStatus(AssetStatus.BROKEN);
+        long underMaintenance = assetRepository.countByStatus(AssetStatus.UNDER_MAINTENANCE);
+
+        AssetStatisticsDto assetStats = AssetStatisticsDto.builder()
+                .available(available)
+                .broken(broken)
+                .underMaintenance(underMaintenance)
+                .total(available + broken + underMaintenance)
+                .build();
+
+        // --- Cảnh báo tồn kho thấp ---
+        List<LowStockAlertDto> lowStockAlerts = inventoryRepository
+                .findByQuantityLessThanEqual(LOW_STOCK_THRESHOLD)
+                .stream()
+                .map(item -> LowStockAlertDto.builder()
+                        .id(item.getId())
+                        .partName(item.getPartName())
+                        .quantity(item.getQuantity())
+                        .threshold(LOW_STOCK_THRESHOLD)
+                        .build())
+                .collect(Collectors.toList());
+
+        return DashboardStatsDto.builder()
+                .assetStats(assetStats)
+                .lowStockAlerts(lowStockAlerts)
+                .build();
+    }
+}

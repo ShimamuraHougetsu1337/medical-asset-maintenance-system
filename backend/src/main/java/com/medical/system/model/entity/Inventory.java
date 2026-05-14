@@ -20,4 +20,10 @@ public class Inventory {
 
     @Column(nullable = false)
     private Integer quantity;
+
+    @Column(name = "min_quantity")
+    private Integer minQuantity;
+
+    @Column(name = "unit_price")
+    private Double unitPrice;
 }

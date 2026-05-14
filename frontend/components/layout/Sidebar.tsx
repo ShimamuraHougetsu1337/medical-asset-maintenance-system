@@ -1,38 +1,49 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Package, Wrench, Settings, LogOut, ClipboardList } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { LayoutDashboard, Package, Settings, LogOut, ClipboardList, BarChart3, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { logout } from '@/app/actions/auth';
+import { logout } from '@/actions/auth';
 import { toast } from 'sonner';
+import { signOut } from 'next-auth/react';
 
 interface SidebarProps {
-  userRole?: 'ADMIN' | 'DOCTOR' | 'ENGINEER';
+  userRole?: 'ADMIN' | 'DOCTOR' | 'NURSE' | 'ENGINEER' | 'MANAGER';
 }
 
 export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
-  // Define menu items and filter based on role
+  // Menu items lọc theo vai trò người dùng
   const allNavItems = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['ADMIN', 'DOCTOR', 'ENGINEER'] },
-    { name: 'My Assets', href: '/assets', icon: Package, roles: ['ADMIN', 'DOCTOR'] },
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'ENGINEER', 'MANAGER'] },
+    { name: 'Analytics', href: '/dashboard', icon: BarChart3, roles: ['ADMIN', 'MANAGER'] },
+    { name: 'Assets & Reporting', href: '/assets', icon: Package, roles: ['ADMIN', 'DOCTOR', 'NURSE'] },
     { name: 'Repair Requests', href: '/repairs', icon: ClipboardList, roles: ['ADMIN', 'ENGINEER'] },
-    { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN', 'DOCTOR', 'ENGINEER'] },
+    { name: 'Inventory View', href: '/management/inventory', icon: Package, roles: ['ADMIN', 'MANAGER', 'ENGINEER'] },
+    { name: 'Asset Management', href: '/management/assets', icon: Settings, roles: ['ADMIN', 'MANAGER'] },
+    { name: 'Staff Management', href: '/management/staff', icon: User, roles: ['ADMIN'] },
+    { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'ENGINEER', 'MANAGER'] },
+
 
   ];
 
-  const filteredItems = allNavItems.filter(item => 
+  const filteredItems = allNavItems.filter(item =>
     !userRole || item.roles.includes(userRole)
   );
 
   const handleLogout = async () => {
+    // 1. Xóa cookie cũ
     await logout();
-    toast.info("Logged out");
-    router.push("/login");
-    router.refresh();
+    
+    // 2. Đăng xuất khỏi NextAuth
+    await signOut({ 
+      callbackUrl: "/login",
+      redirect: true 
+    });
+    
+    toast.info("Logged out successfully");
   };
 
   return (

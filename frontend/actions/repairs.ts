@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 
 const API_URL = process.env.API_URL || "http://localhost:8080/api";
 
+
 export async function getServiceRequests(): Promise<ServiceRequest[]> {
   const token = cookies().get("token")?.value;
 
@@ -18,18 +19,22 @@ export async function getServiceRequests(): Promise<ServiceRequest[]> {
       next: { revalidate: 0 }
     });
 
-    if (!response.ok) throw new Error("Failed to fetch service requests");
+    if (!response.ok) {
+      console.error(`Failed to fetch service requests: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch service requests (Status: ${response.status})`);
+    }
     
     const result: ApiResponse<ServiceRequest[]> = await response.json();
     return result.data;
   } catch (error) {
-    console.warn("Could not fetch service requests from backend, using fallback mock data", error);
+    console.error("Could not fetch service requests from backend:", error);
     // Mock data if backend endpoint doesn't exist yet
     return [];
   }
+
 }
 
-export async function completeRepair(requestId: string, resolutionDetails: string, usedParts: { partId: number, quantity: number }[]) {
+export async function completeRepair(requestId: string | number, resolutionDetails: string, usedParts: { partId: number, quantity: number }[]) {
   const token = cookies().get("token")?.value;
 
   if (!token) {
@@ -46,15 +51,18 @@ export async function completeRepair(requestId: string, resolutionDetails: strin
       body: JSON.stringify({ resolutionDetails, usedParts }),
     });
 
-    const result: ApiResponse<any> = await response.json();
+    if (!response.ok) {
+      return { success: false, message: `Failed with status ${response.status}` };
+    }
 
-    if (response.ok) {
+    try {
+      await response.json();
       revalidatePath("/repairs");
       revalidatePath("/assets");
       return { success: true };
+    } catch {
+      return { success: false, message: "Invalid response from server" };
     }
-
-    return { success: false, message: result.message || "Failed to complete repair" };
   } catch (error) {
     console.error("Complete repair error:", error);
     return { success: false, message: "Server connection failed" };

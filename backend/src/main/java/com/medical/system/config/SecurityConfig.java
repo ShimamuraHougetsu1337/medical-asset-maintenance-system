@@ -43,14 +43,21 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
-                        
+
+                        // Staff Management: chỉ ADMIN
+                        .requestMatchers("/api/staff/**").hasRole("ADMIN")
+
+                        // Dashboard: chỉ MANAGER và ADMIN
+                        .requestMatchers("/api/dashboard/**").hasAnyRole("MANAGER", "ADMIN")
+
                         // Role-based restrictions
-                        .requestMatchers(HttpMethod.POST, "/api/assets/*/report-failure").hasAnyRole("DOCTOR", "ADMIN")
-                        .requestMatchers("/api/service-requests/**").hasAnyRole("ENGINEER", "ADMIN")
-                        
+                        .requestMatchers(HttpMethod.POST, "/api/assets/*/report-failure").hasAnyRole("DOCTOR", "NURSE", "ADMIN")
+                        .requestMatchers("/api/service-requests/**").hasAnyRole("ENGINEER", "ADMIN", "MANAGER", "DOCTOR", "NURSE")
+                        .requestMatchers("/api/inventory/**").hasAnyRole("ENGINEER", "ADMIN", "MANAGER")
+
                         // General secured endpoints
                         .requestMatchers("/api/assets/**").authenticated()
-                        
+
                         // Any other request must be authenticated
                         .anyRequest().authenticated()
                 );
@@ -74,7 +81,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000"));
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         configuration.setExposedHeaders(List.of("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));

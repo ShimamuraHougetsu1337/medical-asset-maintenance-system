@@ -78,6 +78,29 @@ public class MaintenanceService {
         return inventoryRepository.findAll();
     }
 
+    @Transactional
+    public Inventory saveInventory(Inventory inventory) {
+        return inventoryRepository.save(inventory);
+    }
+
+    @Transactional
+    public Inventory updateInventory(Long id, com.medical.system.dto.InventoryDto dto) {
+        Inventory item = inventoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
+        
+        item.setPartName(dto.getPartName());
+        item.setQuantity(dto.getQuantity());
+        item.setMinQuantity(dto.getMinQuantity());
+        item.setUnitPrice(dto.getUnitPrice());
+        
+        return inventoryRepository.save(item);
+    }
+
+    @Transactional
+    public void deleteInventory(Long id) {
+        inventoryRepository.deleteById(id);
+    }
+
     /**
      * Flow 2 (Engineer): Complete a repair request.
      */

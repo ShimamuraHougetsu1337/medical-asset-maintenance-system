@@ -1,20 +1,24 @@
 package com.medical.system.controller;
 
 import com.medical.system.dto.ApiResponse;
-import com.medical.system.model.entity.Asset;
+import com.medical.system.dto.AssetDto;
+import com.medical.system.dto.ReportFailureRequest;
+import com.medical.system.dto.ServiceRequestDto;
 import com.medical.system.repository.AssetRepository;
+import com.medical.system.service.MaintenanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * Controller for asset inventory management.
+ * Controller quản lý thiết bị y tế.
+ * Luôn trả về AssetDto, không trả Entity trực tiếp.
  */
 @RestController
 @RequestMapping("/api/assets")
@@ -23,11 +27,80 @@ import java.util.List;
 public class AssetController {
 
     private final AssetRepository assetRepository;
+    private final MaintenanceService maintenanceService;
 
-    @Operation(summary = "Get all assets")
+    @Operation(summary = "Lấy danh sách tất cả thiết bị (DTO)")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Asset>>> getAllAssets() {
-        List<Asset> assets = assetRepository.findAll();
-        return ResponseEntity.ok(ApiResponse.success(assets, "Assets retrieved successfully"));
+    public ResponseEntity<ApiResponse<List<AssetDto>>> getAllAssets() {
+        List<AssetDto> dtos = assetRepository.findAll().stream()
+                .map(a -> AssetDto.builder()
+                        .id(a.getId())
+                        .code(a.getCode())
+                        .name(a.getName())
+                        .status(a.getStatus())
+                        .nextMaintenanceDate(a.getNextMaintenanceDate())
+                        .build())
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success(dtos, "Assets retrieved successfully"));
+    }
+
+    @Operation(summary = "Thêm thiết bị mới (Admin/Manager)")
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<AssetDto>> createAsset(@Valid @RequestBody AssetDto assetDto) {
+        com.medical.system.model.entity.Asset asset = com.medical.system.model.entity.Asset.builder()
+                .code(assetDto.getCode())
+                .name(assetDto.getName())
+                .status(assetDto.getStatus() != null ? assetDto.getStatus() : com.medical.system.model.enums.AssetStatus.AVAILABLE)
+                .nextMaintenanceDate(assetDto.getNextMaintenanceDate())
+                .build();
+        
+        com.medical.system.model.entity.Asset saved = assetRepository.save(asset);
+        return ResponseEntity.ok(ApiResponse.success(mapToDto(saved), "Asset created successfully"));
+    }
+
+    @Operation(summary = "Cập nhật thông tin thiết bị (Admin/Manager)")
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<AssetDto>> updateAsset(@PathVariable Long id, @Valid @RequestBody AssetDto assetDto) {
+        com.medical.system.model.entity.Asset asset = assetRepository.findById(id)
+                .orElseThrow(() -> new com.medical.system.exception.ResourceNotFoundException("Asset not found"));
+        
+        asset.setName(assetDto.getName());
+        asset.setCode(assetDto.getCode());
+        asset.setStatus(assetDto.getStatus());
+        asset.setNextMaintenanceDate(assetDto.getNextMaintenanceDate());
+        
+        com.medical.system.model.entity.Asset updated = assetRepository.save(asset);
+        return ResponseEntity.ok(ApiResponse.success(mapToDto(updated), "Asset updated successfully"));
+    }
+
+    @Operation(summary = "Xóa thiết bị (Admin)")
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteAsset(@PathVariable Long id) {
+        assetRepository.deleteById(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Asset deleted successfully"));
+    }
+
+    @Operation(summary = "Báo hỏng thiết bị (Doctor/Nurse)")
+    @PostMapping("/{id}/report-failure")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE', 'ADMIN')")
+    public ResponseEntity<ApiResponse<ServiceRequestDto>> reportFailure(
+            @PathVariable Long id,
+            @Valid @RequestBody ReportFailureRequest request) {
+        ServiceRequestDto result = maintenanceService.reportFailure(id, request);
+        return ResponseEntity.ok(ApiResponse.success(result, "Asset failure reported successfully"));
+    }
+
+    private AssetDto mapToDto(com.medical.system.model.entity.Asset a) {
+        return AssetDto.builder()
+                .id(a.getId())
+                .code(a.getCode())
+                .name(a.getName())
+                .status(a.getStatus())
+                .nextMaintenanceDate(a.getNextMaintenanceDate())
+                .build();
     }
 }
+

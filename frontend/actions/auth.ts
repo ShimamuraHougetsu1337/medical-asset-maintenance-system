@@ -4,19 +4,21 @@ import { cookies } from "next/headers";
 import { AuthResponse, ApiResponse } from "@/types";
 
 const API_URL = process.env.API_URL || "http://localhost:8080/api";
- 
- export async function login(formData: any) {
-   try {
-     const response = await fetch(`${API_URL}/auth/login`, {
-       method: "POST",
+
+
+export async function login(formData: unknown) {
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });
 
     const result: ApiResponse<AuthResponse> = await response.json();
+    console.log("Login API result:", result);
 
-    if (response.ok && result.data.token) {
+    if (response.ok && result.data && result.data.token) {
       // Store token and user info in cookies
       cookies().set("token", result.data.token, {
         httpOnly: true,
@@ -40,11 +42,15 @@ const API_URL = process.env.API_URL || "http://localhost:8080/api";
       return { success: true };
     }
 
-    return { success: false, message: result.message || "Invalid credentials" };
+    return { 
+      success: false, 
+      message: result.message || `Login failed with status ${response.status}` 
+    };
   } catch (error) {
-    console.error("Login error:", error);
-    return { success: false, message: "Server connection failed" };
+    console.error("Login server action error:", error);
+    return { success: false, message: "Server connection failed: " + (error as Error).message };
   }
+
 }
 
 export async function logout() {

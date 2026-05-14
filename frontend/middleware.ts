@@ -1,36 +1,35 @@
+import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-/**
- * Middleware to protect routes based on authentication state.
- */
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get("token")?.value;
-  const isLoginPage = request.nextUrl.pathname === "/login";
+export default withAuth(
+  function middleware(req) {
+    const token = req.nextauth.token;
+    const path = req.nextUrl.pathname;
 
-  // If no token and not on login page, redirect to login
-  if (!token && !isLoginPage) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Phân quyền chi tiết dựa trên Path
+    if (path.startsWith("/management/staff") && token?.role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+
+    if (path.startsWith("/management") && !["ADMIN", "MANAGER"].includes(token?.role as string)) {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+    
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token, // Chỉ cho phép nếu đã có Token
+    },
+    pages: {
+      signIn: "/login",
+    },
   }
+);
 
-  // If token exists and on login page, redirect to home
-  if (token && isLoginPage) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  return NextResponse.next();
-}
-
-// See "Matching Paths" below to learn more
 export const config = {
+  // Các đường dẫn cần bảo vệ (loại trừ login và các file tĩnh)
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|login).*)",
   ],
 };

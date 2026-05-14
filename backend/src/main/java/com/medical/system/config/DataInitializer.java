@@ -4,9 +4,7 @@ import com.medical.system.model.entity.Asset;
 import com.medical.system.model.entity.Inventory;
 import com.medical.system.model.entity.User;
 import com.medical.system.model.enums.AssetStatus;
-import com.medical.system.model.enums.RequestStatus;
 import com.medical.system.model.enums.Role;
-
 import com.medical.system.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,11 +13,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-
+import java.time.LocalDate;
 import java.util.List;
 
 /**
  * Seeds the database with initial data for testing.
+ * Runs on every startup to ensure a clean, predictable state.
  */
 @Component
 @RequiredArgsConstructor
@@ -32,21 +31,23 @@ public class DataInitializer implements CommandLineRunner {
     private final ServiceRequestRepository serviceRequestRepository;
     private final ServiceLogRepository serviceLogRepository;
     private final ServiceLogPartRepository serviceLogPartRepository;
+    private final MaintenanceScheduleRepository maintenanceScheduleRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public void run(String... args) {
         log.info("Cleaning up database before seeding...");
-        
+
         // Delete in correct order using batch delete for efficiency and to avoid FK issues
+        maintenanceScheduleRepository.deleteAllInBatch();
         serviceLogPartRepository.deleteAllInBatch();
         serviceLogRepository.deleteAllInBatch();
         serviceRequestRepository.deleteAllInBatch();
         assetRepository.deleteAllInBatch();
         inventoryRepository.deleteAllInBatch();
         userRepository.deleteAllInBatch();
-        
+
         // Ensure deletes are flushed to the database
         userRepository.flush();
 
@@ -54,39 +55,66 @@ public class DataInitializer implements CommandLineRunner {
         seedUsers();
         seedAssets();
         seedInventory();
-        
-        log.info("Database seeding completed successfully. System is ready for a fresh flow test.");
+
+        log.info("Database seeding completed. System ready for testing.");
     }
 
     private void seedUsers() {
-        createDefaultUser("admin", "admin123", Role.ADMIN);
-        createDefaultUser("doctor", "doctor123", Role.DOCTOR);
+        // Phase 3 - 5 roles
+        createDefaultUser("admin",    "admin123",    Role.ADMIN);
+        createDefaultUser("doctor",   "doctor123",   Role.DOCTOR);
+        createDefaultUser("nurse",    "nurse123",    Role.NURSE);
         createDefaultUser("engineer", "engineer123", Role.ENGINEER);
+        createDefaultUser("manager",  "manager123",  Role.MANAGER);
     }
 
     private void seedAssets() {
         List<Asset> assets = List.of(
-                Asset.builder().code("AST001").name("MRI Scanner - Siemens").status(AssetStatus.AVAILABLE).build(),
-                Asset.builder().code("AST002").name("Ventilator - Drager").status(AssetStatus.AVAILABLE).build(),
-                Asset.builder().code("AST003").name("Ultrasound - GE").status(AssetStatus.AVAILABLE).build(),
-                Asset.builder().code("AST004").name("X-Ray Machine - Philips").status(AssetStatus.AVAILABLE).build(),
-                Asset.builder().code("AST005").name("Patient Monitor - Mindray").status(AssetStatus.AVAILABLE).build(),
-                Asset.builder().code("AST006").name("Infusion Pump - Baxter").status(AssetStatus.AVAILABLE).build()
+                Asset.builder()
+                        .code("AST001").name("MRI Scanner - Siemens")
+                        .status(AssetStatus.AVAILABLE)
+                        .nextMaintenanceDate(LocalDate.now().minusDays(1)) // Quá hạn - Cron Job sẽ bắt
+                        .build(),
+                Asset.builder()
+                        .code("AST002").name("Ventilator - Drager")
+                        .status(AssetStatus.AVAILABLE)
+                        .nextMaintenanceDate(LocalDate.now())               // Đến hạn hôm nay
+                        .build(),
+                Asset.builder()
+                        .code("AST003").name("Ultrasound - GE")
+                        .status(AssetStatus.AVAILABLE)
+                        .nextMaintenanceDate(LocalDate.now().plusDays(30))
+                        .build(),
+                Asset.builder()
+                        .code("AST004").name("X-Ray Machine - Philips")
+                        .status(AssetStatus.AVAILABLE)
+                        .nextMaintenanceDate(LocalDate.now().plusDays(60))
+                        .build(),
+                Asset.builder()
+                        .code("AST005").name("Patient Monitor - Mindray")
+                        .status(AssetStatus.AVAILABLE)
+                        .nextMaintenanceDate(LocalDate.now().plusDays(15))
+                        .build(),
+                Asset.builder()
+                        .code("AST006").name("Infusion Pump - Baxter")
+                        .status(AssetStatus.AVAILABLE)
+                        .nextMaintenanceDate(LocalDate.now().plusDays(45))
+                        .build()
         );
         assetRepository.saveAll(assets);
-        log.info("Seeded 6 assets in AVAILABLE status");
+        log.info("Seeded 6 assets (2 with past/today maintenance dates for cron job testing)");
     }
-
 
     private void seedInventory() {
         List<Inventory> inventoryList = List.of(
-                Inventory.builder().partName("LCD Display Panel").quantity(10).build(),
-                Inventory.builder().partName("Power Supply Unit").quantity(5).build(),
-                Inventory.builder().partName("Oxygen Sensor").quantity(50).build(),
-                Inventory.builder().partName("Thermal Printer Paper").quantity(100).build()
+                Inventory.builder().partName("LCD Display Panel").quantity(10).build(),    // Tại ngưỡng cảnh báo
+                Inventory.builder().partName("Power Supply Unit").quantity(5).build(),     // Dưới ngưỡng → cảnh báo
+                Inventory.builder().partName("Oxygen Sensor").quantity(50).build(),        // Bình thường
+                Inventory.builder().partName("Thermal Printer Paper").quantity(8).build(), // Dưới ngưỡng → cảnh báo
+                Inventory.builder().partName("Hydraulic Tubing").quantity(25).build()      // Bình thường
         );
         inventoryRepository.saveAll(inventoryList);
-        log.info("Seeded inventory data");
+        log.info("Seeded 5 inventory items (3 below/at low-stock threshold for alert testing)");
     }
 
     private void createDefaultUser(String username, String password, Role role) {
@@ -96,8 +124,6 @@ public class DataInitializer implements CommandLineRunner {
                 .role(role)
                 .build();
         userRepository.save(user);
-        log.info("Created user: {}", username);
+        log.info("Created user: {} ({})", username, role);
     }
 }
-
-

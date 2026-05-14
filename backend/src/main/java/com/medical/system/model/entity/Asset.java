@@ -4,6 +4,8 @@ import com.medical.system.model.enums.AssetStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "assets")
 @Getter
@@ -25,4 +27,10 @@ public class Asset {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AssetStatus status;
+
+    /**
+     * Ngày đến hạn bảo trì tiếp theo. Cron Job sẽ quét field này hàng ngày.
+     */
+    @Column(name = "next_maintenance_date")
+    private LocalDate nextMaintenanceDate;
 }

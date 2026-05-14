@@ -25,36 +25,34 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
-    private final UserRepository userRepository;
+        private final AuthenticationManager authenticationManager;
+        private final JwtService jwtService;
+        private final UserRepository userRepository;
 
-    /**
-     * Authenticates a user and returns a JWT token.
-     */
-    @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest) {
-        // Authenticate the user
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
-        );
+        /**
+         * Authenticates a user and returns a JWT token.
+         */
+        @PostMapping("/login")
+        public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest) {
+                // Authenticate the user
+                Authentication authentication = authenticationManager.authenticate(
+                                new UsernamePasswordAuthenticationToken(
+                                                loginRequest.getUsername(),
+                                                loginRequest.getPassword()));
 
-        // Fetch user to get the role (or extract from authentication principal)
-        User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found after authentication"));
+                // Fetch user to get the role (or extract from authentication principal)
+                User user = userRepository.findByUsername(loginRequest.getUsername())
+                                .orElseThrow(() -> new RuntimeException("User not found after authentication"));
 
-        // Generate token
-        String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
+                // Generate token
+                String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
 
-        LoginResponse loginResponse = LoginResponse.builder()
-                .token(token)
-                .username(user.getUsername())
-                .role(user.getRole().name())
-                .build();
+                LoginResponse loginResponse = LoginResponse.builder()
+                                .token(token)
+                                .username(user.getUsername())
+                                .role(user.getRole().name())
+                                .build();
 
-        return ResponseEntity.ok(ApiResponse.success(loginResponse, "Login successful"));
-    }
+                return ResponseEntity.ok(ApiResponse.success(loginResponse, "Login successful"));
+        }
 }

@@ -5,7 +5,7 @@ import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { completeRepair } from "@/app/actions/repairs";
+import { completeRepair } from "@/actions/repairs";
 import { InventoryItem, ServiceRequest } from "@/types";
 
 import {
@@ -20,25 +20,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2 } from "lucide-react";
 
-const repairSchema: z.ZodType<RepairFormValues> = z.object({
+const repairSchema = z.object({
   resolutionDetails: z.string().min(0, "Please provide detailed resolution notes."),
   usedParts: z.array(
     z.object({
       partId: z.coerce.number().min(1, "Please select a part"),
       quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
     })
-  ).default([]),
-}) as any;
+  ),
+});
 
-type UsedPart = {
-  partId: number;
-  quantity: number;
-};
-
-type RepairFormValues = {
-  resolutionDetails: string;
-  usedParts: UsedPart[];
-};
+type RepairFormValues = z.infer<typeof repairSchema>;
 
 interface CompleteRepairModalProps {
   request: ServiceRequest | null;
@@ -57,7 +49,8 @@ export function CompleteRepairModal({ request, isOpen, onClose, inventory }: Com
     reset,
     formState: { errors },
   } = useForm<RepairFormValues>({
-    resolver: zodResolver(repairSchema as any),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(repairSchema) as any,
     defaultValues: {
       resolutionDetails: "",
       usedParts: [],
@@ -102,7 +95,7 @@ export function CompleteRepairModal({ request, isOpen, onClose, inventory }: Com
           <DialogTitle>Complete Repair: {request?.asset?.name}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="resolutionDetails">Resolution Details</Label>
             <Textarea
