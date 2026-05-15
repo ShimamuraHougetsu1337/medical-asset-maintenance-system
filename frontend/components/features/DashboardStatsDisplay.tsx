@@ -19,11 +19,14 @@ import {
   BarChart3,
   ClipboardList,
   TrendingDown,
+  Clock,
 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 interface Props {
   stats: DashboardStats;
   requests: ServiceRequest[];
+  schedules: import("@/types").MaintenanceSchedule[];
 }
 
 // Màu sắc cho Pie Chart
@@ -31,9 +34,10 @@ const PIE_COLORS: Record<string, string> = {
   Available: "#22c55e",       // green-500
   Broken: "#ef4444",          // red-500
   "Under Maintenance": "#f59e0b", // amber-500
+  "Maintenance Due": "#3b82f6",   // blue-500
 };
 
-export function DashboardStatsDisplay({ stats, requests }: Props) {
+export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
   const { assetStats, lowStockAlerts } = stats;
 
   // Dữ liệu cho Pie Chart thiết bị theo trạng thái
@@ -41,6 +45,7 @@ export function DashboardStatsDisplay({ stats, requests }: Props) {
     { name: "Available", value: Number(assetStats.available) },
     { name: "Broken", value: Number(assetStats.broken) },
     { name: "Under Maintenance", value: Number(assetStats.underMaintenance) },
+    { name: "Maintenance Due", value: Number(assetStats.maintenanceDue) },
   ].filter((d) => d.value > 0); // Bỏ qua trạng thái có giá trị 0
 
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
@@ -60,7 +65,7 @@ export function DashboardStatsDisplay({ stats, requests }: Props) {
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng thiết bị</CardTitle>
@@ -104,6 +109,17 @@ export function DashboardStatsDisplay({ stats, requests }: Props) {
           <CardContent>
             <div className="text-3xl font-bold text-amber-600">{assetStats.underMaintenance}</div>
             <p className="text-xs text-muted-foreground mt-1">{completedCount} phiếu đã hoàn thành</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-blue-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Đến hạn bảo trì</CardTitle>
+            <Clock className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-600">{assetStats.maintenanceDue}</div>
+            <p className="text-xs text-muted-foreground mt-1">Cần kiểm tra định kỳ</p>
           </CardContent>
         </Card>
       </div>
@@ -221,54 +237,99 @@ export function DashboardStatsDisplay({ stats, requests }: Props) {
         </Card>
       </div>
 
-      {/* Recent Repair Requests Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
-            Phiếu sửa chữa gần đây
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {requests.length === 0 ? (
-            <div className="text-sm text-muted-foreground italic py-6 text-center">
-              Chưa có phiếu sửa chữa nào.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {requests.slice(0, 6).map((req) => (
-                <div
-                  key={req.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 bg-blue-100 rounded-full">
-                      <Wrench className="h-3.5 w-3.5 text-blue-600" />
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Recent Repair Requests Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Phiếu sửa chữa gần đây
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {requests.length === 0 ? (
+              <div className="text-sm text-muted-foreground italic py-6 text-center">
+                Chưa có phiếu sửa chữa nào.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {requests.slice(0, 6).map((req) => (
+                  <div
+                    key={req.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-1.5 bg-blue-100 rounded-full">
+                        <Wrench className="h-3.5 w-3.5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{req.assetName}</p>
+                        <p className="text-xs text-muted-foreground truncate max-w-xs">
+                          {req.description}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold">{req.asset?.name}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-xs">
-                        {req.description}
-                      </p>
+                    <Badge
+                      variant={
+                        req.status === "COMPLETED"
+                          ? "secondary"
+                          : req.status === "PENDING"
+                          ? "destructive"
+                          : "default"
+                      }
+                    >
+                      {req.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Maintenance Schedules Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-500" />
+              Lịch bảo trì hệ thống (Cron Job)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {schedules.length === 0 ? (
+              <div className="text-sm text-muted-foreground italic py-6 text-center">
+                Chưa có lịch bảo trì tự động nào được tạo.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {schedules.slice(0, 6).map((schedule) => (
+                  <div
+                    key={schedule.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-blue-50/50 border border-blue-100"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-1.5 bg-blue-100 rounded-full">
+                        <Package className="h-3.5 w-3.5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{schedule.assetName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {schedule.notes}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="outline" className="bg-white">
+                        {formatDate(schedule.scheduledDate)}
+                      </Badge>
                     </div>
                   </div>
-                  <Badge
-                    variant={
-                      req.status === "COMPLETED"
-                        ? "secondary"
-                        : req.status === "PENDING"
-                        ? "destructive"
-                        : "default"
-                    }
-                  >
-                    {req.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

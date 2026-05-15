@@ -71,7 +71,7 @@ export function DashboardView({ requests, userRole }: DashboardViewProps) {
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex justify-between items-center">
-                          <p className="text-sm font-semibold">{req.asset?.name}</p>
+                          <p className="text-sm font-semibold">{req.assetName}</p>
                           <span className="text-xs text-muted-foreground flex items-center">
                             <Clock className="h-3 w-3 mr-1" />
                             {formatDate(req.completedAt!)}
@@ -111,7 +111,7 @@ export function DashboardView({ requests, userRole }: DashboardViewProps) {
                 <div key={req.id} className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-red-500" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{req.asset?.name}</p>
+                    <p className="text-sm font-medium">{req.assetName}</p>
                     <p className="text-xs text-muted-foreground truncate">{req.description}</p>
                   </div>
                 </div>

@@ -90,3 +90,47 @@ export async function getInventory(): Promise<InventoryItem[]> {
 
   }
 }
+
+export async function getMaintenanceSchedules(): Promise<import("@/types").MaintenanceSchedule[]> {
+  const token = cookies().get("token")?.value;
+
+  try {
+    const response = await fetch(`${API_URL}/maintenance-schedules`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      },
+      next: { revalidate: 0 }
+    });
+
+    if (!response.ok) throw new Error("Failed to fetch maintenance schedules");
+    
+    const result: ApiResponse<import("@/types").MaintenanceSchedule[]> = await response.json();
+    return result.data;
+  } catch (error) {
+    console.warn("Could not fetch maintenance schedules from backend", error);
+    return [];
+  }
+}
+
+export async function startMaintenance(requestId: string | number) {
+  const token = cookies().get("token")?.value;
+
+  try {
+    const response = await fetch(`${API_URL}/service-requests/${requestId}/start`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) return { success: false, message: "Failed to start maintenance" };
+    
+    revalidatePath("/repairs");
+    revalidatePath("/assets");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Start maintenance error:", error);
+    return { success: false, message: "Connection failed" };
+  }
+}

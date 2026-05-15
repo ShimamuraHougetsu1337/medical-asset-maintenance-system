@@ -2,7 +2,7 @@ export interface Asset {
   id: string | number;
   code: string;
   name: string;
-  status: 'AVAILABLE' | 'BROKEN' | 'UNDER_MAINTENANCE';
+  status: 'AVAILABLE' | 'BROKEN' | 'UNDER_MAINTENANCE' | 'MAINTENANCE_DUE';
   nextMaintenanceDate?: string;
 }
 
@@ -45,8 +45,9 @@ export interface ServiceLog {
 
 export interface ServiceRequest {
   id: string | number;
-  asset: Asset;
-  reportedBy: User;
+  assetId: number;
+  assetName: string;
+  reportedByUsername: string;
   description: string;
   status: 'PENDING' | 'ASSIGNED' | 'COMPLETED';
   createdAt: string;
@@ -67,6 +68,7 @@ export interface AssetStatistics {
   available: number;
   broken: number;
   underMaintenance: number;
+  maintenanceDue: number;
   total: number;
 }
 
@@ -80,4 +82,13 @@ export interface LowStockAlert {
 export interface DashboardStats {
   assetStats: AssetStatistics;
   lowStockAlerts: LowStockAlert[];
+}
+
+export interface MaintenanceSchedule {
+  id: number;
+  assetId: number;
+  assetName: string;
+  assetCode: string;
+  scheduledDate: string;
+  notes: string;
 }

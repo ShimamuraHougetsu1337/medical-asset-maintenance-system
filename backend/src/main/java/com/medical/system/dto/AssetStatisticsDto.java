@@ -17,5 +17,6 @@ public class AssetStatisticsDto {
     private long available;
     private long broken;
     private long underMaintenance;
+    private long maintenanceDue;
     private long total;
 }

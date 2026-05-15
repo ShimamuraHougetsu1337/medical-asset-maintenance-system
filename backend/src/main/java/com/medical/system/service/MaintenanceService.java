@@ -1,13 +1,11 @@
 package com.medical.system.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medical.system.dto.CompleteRepairRequest;
 import com.medical.system.dto.ReportFailureRequest;
 import com.medical.system.dto.ServiceRequestDto;
 import com.medical.system.dto.UsedPartDto;
 import com.medical.system.exception.BusinessException;
-import com.medical.system.exception.InsufficientStockException;
 import com.medical.system.exception.ResourceNotFoundException;
 import com.medical.system.mapper.ServiceRequestMapper;
 import com.medical.system.model.entity.*;
@@ -23,8 +21,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
 @Service
 @RequiredArgsConstructor
 public class MaintenanceService {
@@ -34,6 +30,7 @@ public class MaintenanceService {
     private final InventoryRepository inventoryRepository;
     private final UserRepository userRepository;
     private final ServiceLogRepository serviceLogRepository;
+    private final MaintenanceScheduleRepository maintenanceScheduleRepository;
     private final ServiceRequestMapper serviceRequestMapper;
     private final ObjectMapper objectMapper;
 
@@ -87,12 +84,12 @@ public class MaintenanceService {
     public Inventory updateInventory(Long id, com.medical.system.dto.InventoryDto dto) {
         Inventory item = inventoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
-        
+
         item.setPartName(dto.getPartName());
         item.setQuantity(dto.getQuantity());
         item.setMinQuantity(dto.getMinQuantity());
         item.setUnitPrice(dto.getUnitPrice());
-        
+
         return inventoryRepository.save(item);
     }
 
@@ -102,7 +99,30 @@ public class MaintenanceService {
     }
 
     /**
-     * Flow 2 (Engineer): Complete a repair request.
+     * Flow 2: Start Maintenance/Repair (Engineer)
+     */
+    @Transactional
+    public ServiceRequestDto startMaintenance(Long requestId) {
+        ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
+
+        if (serviceRequest.getStatus() != RequestStatus.PENDING) {
+            throw new BusinessException("Request is already " + serviceRequest.getStatus());
+        }
+
+        serviceRequest.setStatus(RequestStatus.ASSIGNED);
+        
+        Asset asset = serviceRequest.getAsset();
+        if (asset != null) {
+            asset.setStatus(AssetStatus.UNDER_MAINTENANCE);
+            assetRepository.save(asset);
+        }
+
+        return serviceRequestMapper.toDto(serviceRequestRepository.save(serviceRequest));
+    }
+
+    /**
+     * Flow 3 (Engineer): Complete a repair request.
      */
     @Transactional
     public ServiceRequestDto completeRepair(Long requestId, CompleteRepairRequest request) {
@@ -135,7 +155,8 @@ public class MaintenanceService {
                         .orElseThrow(() -> new ResourceNotFoundException("Part not found: " + partDto.getPartId()));
 
                 if (item.getQuantity() < partDto.getQuantity()) {
-                    throw new BusinessException("Insufficient stock for: " + item.getPartName() + " (Available: " + item.getQuantity() + ")");
+                    throw new BusinessException("Insufficient stock for: " + item.getPartName() + " (Available: "
+                            + item.getQuantity() + ")");
                 }
 
                 item.setQuantity(item.getQuantity() - partDto.getQuantity());
@@ -156,10 +177,11 @@ public class MaintenanceService {
         // Update Request
         serviceRequest.setStatus(RequestStatus.COMPLETED);
         serviceRequest.setCompletedAt(LocalDateTime.now());
-        // No need to manually add log to serviceRequest.logs if we rely on DB/Hibernate, 
+        // No need to manually add log to serviceRequest.logs if we rely on
+        // DB/Hibernate,
         // but adding it ensures the DTO returned has the latest logs.
         serviceRequest.getLogs().add(serviceLog);
-        
+
         ServiceRequest savedRequest = serviceRequestRepository.save(serviceRequest);
 
         // Update Asset
@@ -171,6 +193,18 @@ public class MaintenanceService {
 
         return serviceRequestMapper.toDto(savedRequest);
     }
+
+    @Transactional(readOnly = true)
+    public List<com.medical.system.dto.MaintenanceScheduleDto> getAllMaintenanceSchedules() {
+        return ((List<com.medical.system.model.entity.MaintenanceSchedule>) maintenanceScheduleRepository.findAll()).stream()
+                .map(s -> com.medical.system.dto.MaintenanceScheduleDto.builder()
+                        .id(s.getId())
+                        .assetId(s.getAsset().getId())
+                        .assetName(s.getAsset().getName())
+                        .assetCode(s.getAsset().getCode())
+                        .scheduledDate(s.getScheduledDate())
+                        .notes(s.getNotes())
+                        .build())
+                .toList();
+    }
 }
-
-

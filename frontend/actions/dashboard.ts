@@ -32,6 +32,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         available: 0,
         broken: 0,
         underMaintenance: 0,
+        maintenanceDue: 0,
         total: 0,
       },
       lowStockAlerts: [],

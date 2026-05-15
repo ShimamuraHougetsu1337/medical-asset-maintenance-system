@@ -92,7 +92,7 @@ export function CompleteRepairModal({ request, isOpen, onClose, inventory }: Com
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Complete Repair: {request?.asset?.name}</DialogTitle>
+          <DialogTitle>Complete Repair: {request?.assetName}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

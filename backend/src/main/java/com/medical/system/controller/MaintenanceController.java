@@ -87,5 +87,22 @@ public class MaintenanceController {
         ServiceRequestDto result = maintenanceService.completeRepair(id, request);
         return ResponseEntity.ok(ApiResponse.success(result, "Repair request completed successfully"));
     }
+
+    @Operation(summary = "Bắt đầu bảo trì/sửa chữa (Engineer)")
+    @PostMapping("/service-requests/{id}/start")
+    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<ServiceRequestDto>> startMaintenance(@PathVariable Long id) {
+        ServiceRequestDto result = maintenanceService.startMaintenance(id);
+        return ResponseEntity.ok(ApiResponse.success(result, "Maintenance started successfully"));
+    }
+
+    @Operation(summary = "Lấy danh sách lịch bảo trì (Admin/Manager)")
+    @GetMapping("/maintenance-schedules")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'ENGINEER')")
+    public ResponseEntity<ApiResponse<List<com.medical.system.dto.MaintenanceScheduleDto>>> getMaintenanceSchedules() {
+        return ResponseEntity.ok(ApiResponse.success(
+                maintenanceService.getAllMaintenanceSchedules(),
+                "Maintenance schedules retrieved successfully"));
+    }
 }
 

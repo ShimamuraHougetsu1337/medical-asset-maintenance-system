@@ -19,6 +19,7 @@ import { Plus, Trash2, Edit2, Search, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { formatDate } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -175,6 +176,7 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
                       <option value="AVAILABLE">Available (Operational)</option>
                       <option value="UNDER_MAINTENANCE">Under Maintenance</option>
                       <option value="BROKEN">Broken / Out of Order</option>
+                      <option value="MAINTENANCE_DUE">Maintenance Due (Scheduled)</option>
                     </select>
                   </div>
                 )}
@@ -211,6 +213,7 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
               <TableHead>Code</TableHead>
               <TableHead>Asset Name</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Next Maintenance</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -228,6 +231,13 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
                   <TableCell className="font-medium">{asset.name}</TableCell>
                   <TableCell>
                     <span className="capitalize">{asset.status.toLowerCase().replace('_', ' ')}</span>
+                  </TableCell>
+                  <TableCell>
+                    {asset.nextMaintenanceDate ? (
+                      <span className="text-sm text-muted-foreground">{formatDate(asset.nextMaintenanceDate)}</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Not set</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

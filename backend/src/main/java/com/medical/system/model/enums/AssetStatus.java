@@ -1,5 +1,5 @@
 package com.medical.system.model.enums;
 
 public enum AssetStatus {
-    AVAILABLE, BROKEN, UNDER_MAINTENANCE
+    AVAILABLE, BROKEN, UNDER_MAINTENANCE, MAINTENANCE_DUE
 }

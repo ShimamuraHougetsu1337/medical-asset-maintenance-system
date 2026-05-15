@@ -2,8 +2,10 @@ package com.medical.system.config;
 
 import com.medical.system.model.entity.Asset;
 import com.medical.system.model.entity.Inventory;
+import com.medical.system.model.entity.ServiceRequest;
 import com.medical.system.model.entity.User;
 import com.medical.system.model.enums.AssetStatus;
+import com.medical.system.model.enums.RequestStatus;
 import com.medical.system.model.enums.Role;
 import com.medical.system.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -72,37 +74,54 @@ public class DataInitializer implements CommandLineRunner {
         List<Asset> assets = List.of(
                 Asset.builder()
                         .code("AST001").name("MRI Scanner - Siemens")
-                        .status(AssetStatus.AVAILABLE)
-                        .nextMaintenanceDate(LocalDate.now().minusDays(1)) // Quá hạn - Cron Job sẽ bắt
+                        .status(AssetStatus.MAINTENANCE_DUE)
+                        .nextMaintenanceDate(LocalDate.now().minusDays(1))
                         .build(),
                 Asset.builder()
                         .code("AST002").name("Ventilator - Drager")
-                        .status(AssetStatus.AVAILABLE)
-                        .nextMaintenanceDate(LocalDate.now())               // Đến hạn hôm nay
+                        .status(AssetStatus.UNDER_MAINTENANCE)
+                        .nextMaintenanceDate(LocalDate.now().plusDays(90))
                         .build(),
                 Asset.builder()
                         .code("AST003").name("Ultrasound - GE")
-                        .status(AssetStatus.AVAILABLE)
+                        .status(AssetStatus.BROKEN)
                         .nextMaintenanceDate(LocalDate.now().plusDays(30))
                         .build(),
                 Asset.builder()
                         .code("AST004").name("X-Ray Machine - Philips")
                         .status(AssetStatus.AVAILABLE)
                         .nextMaintenanceDate(LocalDate.now().plusDays(60))
-                        .build(),
-                Asset.builder()
-                        .code("AST005").name("Patient Monitor - Mindray")
-                        .status(AssetStatus.AVAILABLE)
-                        .nextMaintenanceDate(LocalDate.now().plusDays(15))
-                        .build(),
-                Asset.builder()
-                        .code("AST006").name("Infusion Pump - Baxter")
-                        .status(AssetStatus.AVAILABLE)
-                        .nextMaintenanceDate(LocalDate.now().plusDays(45))
                         .build()
         );
         assetRepository.saveAll(assets);
-        log.info("Seeded 6 assets (2 with past/today maintenance dates for cron job testing)");
+        log.info("Seeded assets with various statuses (MAINTENANCE_DUE, UNDER_MAINTENANCE, BROKEN)");
+        
+        seedServiceRequests();
+    }
+
+    private void seedServiceRequests() {
+        Asset ventilator = assetRepository.findByCode("AST002").orElse(null);
+        Asset ultrasound = assetRepository.findByCode("AST003").orElse(null);
+        User doctor = userRepository.findByUsername("doctor").orElse(null);
+
+        if (ventilator != null) {
+            serviceRequestRepository.save(ServiceRequest.builder()
+                    .asset(ventilator)
+                    .description("Bảo trì định kỳ - Kỹ sư đang thực hiện")
+                    .status(RequestStatus.ASSIGNED)
+                    .reportedBy(doctor)
+                    .build());
+        }
+
+        if (ultrasound != null) {
+            serviceRequestRepository.save(ServiceRequest.builder()
+                    .asset(ultrasound)
+                    .description("Màn hình không lên nguồn")
+                    .status(RequestStatus.PENDING)
+                    .reportedBy(doctor)
+                    .build());
+        }
+        log.info("Seeded service requests (1 PENDING, 1 ASSIGNED)");
     }
 
     private void seedInventory() {

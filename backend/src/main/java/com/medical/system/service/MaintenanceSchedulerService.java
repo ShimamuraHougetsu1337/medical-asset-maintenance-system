@@ -5,10 +5,11 @@ import com.medical.system.dto.DashboardStatsDto;
 import com.medical.system.dto.LowStockAlertDto;
 import com.medical.system.model.entity.Asset;
 import com.medical.system.model.entity.MaintenanceSchedule;
+import com.medical.system.model.entity.ServiceRequest;
+import com.medical.system.model.entity.User;
 import com.medical.system.model.enums.AssetStatus;
-import com.medical.system.repository.AssetRepository;
-import com.medical.system.repository.InventoryRepository;
-import com.medical.system.repository.MaintenanceScheduleRepository;
+import com.medical.system.model.enums.RequestStatus;
+import com.medical.system.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,6 +34,8 @@ public class MaintenanceSchedulerService {
     private final AssetRepository assetRepository;
     private final InventoryRepository inventoryRepository;
     private final MaintenanceScheduleRepository maintenanceScheduleRepository;
+    private final ServiceRequestRepository serviceRequestRepository;
+    private final UserRepository userRepository;
 
     /**
      * Cron Job chạy lúc 00:00 mỗi ngày.
@@ -60,6 +63,18 @@ public class MaintenanceSchedulerService {
 
             maintenanceScheduleRepository.save(schedule);
 
+            // Tự động tạo Phiếu yêu cầu bảo trì (Service Request)
+            User admin = userRepository.findByUsername("admin").orElse(null);
+            ServiceRequest serviceRequest = ServiceRequest.builder()
+                    .asset(asset)
+                    .description("Bảo trì định kỳ hệ thống: " + asset.getName())
+                    .status(RequestStatus.PENDING)
+                    .reportedBy(admin)
+                    .build();
+            serviceRequestRepository.save(serviceRequest);
+
+            // Cập nhật trạng thái sang MAINTENANCE_DUE để thông báo
+            asset.setStatus(AssetStatus.MAINTENANCE_DUE);
             // Cập nhật lịch bảo trì tiếp theo sang 90 ngày sau (chu kỳ bảo trì định kỳ)
             asset.setNextMaintenanceDate(LocalDate.now().plusDays(90));
             assetRepository.save(asset);
@@ -82,12 +97,14 @@ public class MaintenanceSchedulerService {
         long available = assetRepository.countByStatus(AssetStatus.AVAILABLE);
         long broken = assetRepository.countByStatus(AssetStatus.BROKEN);
         long underMaintenance = assetRepository.countByStatus(AssetStatus.UNDER_MAINTENANCE);
+        long maintenanceDue = assetRepository.countByStatus(AssetStatus.MAINTENANCE_DUE);
 
         AssetStatisticsDto assetStats = AssetStatisticsDto.builder()
                 .available(available)
                 .broken(broken)
                 .underMaintenance(underMaintenance)
-                .total(available + broken + underMaintenance)
+                .maintenanceDue(maintenanceDue)
+                .total(available + broken + underMaintenance + maintenanceDue)
                 .build();
 
         // --- Cảnh báo tồn kho thấp ---

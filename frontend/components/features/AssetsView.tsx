@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ReportFailureForm } from "@/components/features/ReportFailureForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDate } from "@/lib/utils";
 
 interface AssetsViewProps {
   assets: Asset[];
@@ -26,6 +27,7 @@ export function AssetsView({ assets, userRole }: AssetsViewProps) {
       case 'AVAILABLE': return 'secondary';
       case 'BROKEN': return 'destructive';
       case 'UNDER_MAINTENANCE': return 'outline';
+      case 'MAINTENANCE_DUE': return 'default'; // Or a specific color if defined
       default: return 'default';
     }
   };
@@ -50,6 +52,7 @@ export function AssetsView({ assets, userRole }: AssetsViewProps) {
                 <TableHead>Asset Name</TableHead>
                 <TableHead>Asset Code</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Next Maintenance</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -62,6 +65,13 @@ export function AssetsView({ assets, userRole }: AssetsViewProps) {
                     <Badge variant={getStatusVariant(asset.status)}>
                       {asset.status.replace('_', ' ')}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {asset.nextMaintenanceDate ? (
+                      <span className="text-sm">{formatDate(asset.nextMaintenanceDate)}</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">N/A</span>
+                    )}
                   </TableCell>
 
                   <TableCell className="text-right">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ServiceRequest, InventoryItem } from "@/types";
 import { CompleteRepairModal } from "@/components/features/CompleteRepairModal";
+import { startMaintenance } from "@/actions/repairs";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -13,8 +14,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Wrench } from "lucide-react";
+import { Wrench, Play } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface RepairsViewProps {
   initialRequests: ServiceRequest[];
@@ -22,17 +25,27 @@ interface RepairsViewProps {
 }
 
 export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
-  const [requests] = useState<ServiceRequest[]>(initialRequests);
+  const router = useRouter();
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleStartMaintenance = async (id: string | number) => {
+    const result = await startMaintenance(id);
+    if (result.success) {
+      toast.success("Maintenance started. Asset status updated to UNDER_MAINTENANCE");
+      router.refresh();
+    } else {
+      toast.error(result.message);
+    }
+  };
 
   const handleCompleteClick = (request: ServiceRequest) => {
     setSelectedRequest(request);
     setIsModalOpen(true);
   };
 
-  const activeRequests = requests.filter(r => r.status !== "COMPLETED");
-  const completedRequests = requests.filter(r => r.status === "COMPLETED");
+  const activeRequests = initialRequests.filter(r => r.status !== "COMPLETED");
+  const completedRequests = initialRequests.filter(r => r.status === "COMPLETED");
 
   return (
     <div className="space-y-8">
@@ -65,8 +78,8 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
             ) : (
               activeRequests.map((req) => (
                 <TableRow key={req.id}>
-                  <TableCell className="font-medium">{req.asset?.name}</TableCell>
-                  <TableCell>{req.reportedBy?.username}</TableCell>
+                  <TableCell className="font-medium">{req.assetName}</TableCell>
+                  <TableCell>{req.reportedByUsername}</TableCell>
                   <TableCell className="max-w-xs truncate" title={req.description}>
                     {req.description}
                   </TableCell>
@@ -79,13 +92,25 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleCompleteClick(req)}
-                    >
-                      <Wrench className="w-4 h-4 mr-2" />
-                      Complete
-                    </Button>
+                    {req.status === 'PENDING' ? (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                        onClick={() => handleStartMaintenance(req.id)}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Start
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleCompleteClick(req)}
+                      >
+                        <Wrench className="w-4 h-4 mr-2" />
+                        Complete
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -117,7 +142,7 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
               ) : (
                 completedRequests.map((req) => (
                   <TableRow key={req.id}>
-                    <TableCell className="font-medium">{req.asset?.name}</TableCell>
+                    <TableCell className="font-medium">{req.assetName}</TableCell>
                     <TableCell className="max-w-xs truncate" title={req.description}>
                       {req.description}
                     </TableCell>
