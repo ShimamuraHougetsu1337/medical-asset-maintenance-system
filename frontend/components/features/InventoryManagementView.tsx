@@ -20,6 +20,7 @@ import { InventoryItem } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ExportButton } from "@/components/ui/ExportButton";
 
 import {
   Dialog,
@@ -146,18 +147,20 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
           <p className="text-muted-foreground mt-1">Manage stock levels and unit prices for medical spare parts.</p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger
-            render={
-              <Button className="bg-amber-600 hover:bg-amber-700" onClick={() => handleOpenDialog()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Register New Part
-              </Button>
-            }
-          />
+        <div className="flex items-center gap-2">
+          <ExportButton url="http://localhost:8080/api/inventory/export" filename="inventory_report.xlsx" label="Export Inventory" />
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger
+              render={
+                <Button className="bg-amber-600 hover:bg-amber-700" onClick={() => handleOpenDialog()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Register New Part
+                </Button>
+              }
+            />
 
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSave}>
@@ -238,6 +241,7 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
           </DialogContent>
         </Dialog>
       </div>
+    </div>
 
       <Card>
         <CardContent className="p-4">

@@ -20,6 +20,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.HttpHeaders;
+import java.time.temporal.ChronoUnit;
+import java.time.LocalDate;
 
 /**
  * Controller quản lý thiết bị y tế.
@@ -123,6 +130,45 @@ public class AssetController {
         asset.setDepartment(department);
         Asset savedAsset = assetRepository.save(asset);
         return ResponseEntity.ok(ApiResponse.success(savedAsset, "Asset department assigned successfully"));
+    }
+
+    @Operation(summary = "Export asset depreciation to Excel")
+    @GetMapping("/export-depreciation")
+    public ResponseEntity<byte[]> exportDepreciation() throws IOException {
+        List<Asset> assets = assetRepository.findAll();
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Asset Depreciation");
+            Row headerRow = sheet.createRow(0);
+            String[] columns = {"Mã thiết bị", "Tên thiết bị", "Giá mua", "Ngày mua", "Khấu hao lũy kế", "Giá trị còn lại", "Chi phí thay thế"};
+            for (int i = 0; i < columns.length; i++) {
+                headerRow.createCell(i).setCellValue(columns[i]);
+            }
+            int rowIdx = 1;
+            for (Asset a : assets) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(a.getCode() != null ? a.getCode() : "");
+                row.createCell(1).setCellValue(a.getName() != null ? a.getName() : "");
+                double price = a.getPurchasePrice() != null ? a.getPurchasePrice().doubleValue() : 0.0;
+                row.createCell(2).setCellValue(price);
+                row.createCell(3).setCellValue(a.getPurchaseDate() != null ? a.getPurchaseDate().toString() : "");
+                
+                double depAccum = 0.0;
+                if (a.getPurchaseDate() != null) {
+                    long years = ChronoUnit.YEARS.between(a.getPurchaseDate(), LocalDate.now());
+                    years = Math.max(0, years);
+                    depAccum = price * 0.10 * years;
+                    depAccum = Math.min(price, depAccum);
+                }
+                row.createCell(4).setCellValue(depAccum);
+                row.createCell(5).setCellValue(price - depAccum);
+                row.createCell(6).setCellValue(a.getReplacementCost() != null ? a.getReplacementCost().doubleValue() : 0.0);
+            }
+            workbook.write(out);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=asset_depreciation.xlsx")
+                    .header(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .body(out.toByteArray());
+        }
     }
 }
 

@@ -21,6 +21,7 @@ import { User } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ExportButton } from "@/components/ui/ExportButton";
 import {
   Dialog,
   DialogContent,
@@ -129,7 +130,9 @@ export function StaffManagementView({ initialStaff }: StaffManagementViewProps) 
           <p className="text-muted-foreground mt-1">Manage hospital staff accounts and system access roles.</p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        <div className="flex items-center gap-2">
+          <ExportButton url="http://localhost:8080/api/staff/export-performance" filename="staff_performance.xlsx" label="Export Performance" />
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) resetForm();
         }}>
@@ -213,6 +216,7 @@ export function StaffManagementView({ initialStaff }: StaffManagementViewProps) 
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>

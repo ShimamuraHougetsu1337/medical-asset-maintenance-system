@@ -29,6 +29,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ExportButton } from "@/components/ui/ExportButton";
 
 interface AssetManagementViewProps {
   initialAssets: Asset[];
@@ -123,18 +124,21 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
           <p className="text-muted-foreground mt-1">Register and manage hospital medical equipment and assets.</p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger
-            render={
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleOpenDialog()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Register New Asset
-              </Button>
-            }
-          />
+        <div className="flex items-center gap-2">
+          <ExportButton url="http://localhost:8080/api/finance/assets/export" filename="asset_report.xlsx" label="Export Financials" />
+          <ExportButton url="http://localhost:8080/api/assets/export-depreciation" filename="asset_depreciation.xlsx" label="Export Depreciation" />
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger
+              render={
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleOpenDialog()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Register New Asset
+                </Button>
+              }
+            />
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSave}>
               <DialogHeader>
@@ -190,6 +194,7 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>

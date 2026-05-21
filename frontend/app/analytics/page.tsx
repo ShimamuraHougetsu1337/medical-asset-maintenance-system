@@ -28,6 +28,8 @@ function formatRisk(riskLevel: RiskLevel) {
   return riskLevel.replace("_", " ");
 }
 
+import { ExportButton } from "@/components/ui/ExportButton";
+
 export default async function AnalyticsPage() {
   const [assetScores, departmentScores] = await Promise.all([
     getAssetScores(),
@@ -41,9 +43,12 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Maintenance Analytics</h2>
-        <p className="text-muted-foreground">Score assets and departments from repair history.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Maintenance Analytics</h2>
+          <p className="text-muted-foreground">Score assets and departments from repair history.</p>
+        </div>
+        <ExportButton url="http://localhost:8080/api/analytics/export" filename="maintenance_analytics.xlsx" label="Export Analytics" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

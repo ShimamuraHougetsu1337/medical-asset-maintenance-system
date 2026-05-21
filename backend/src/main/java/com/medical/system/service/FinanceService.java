@@ -238,6 +238,40 @@ public class FinanceService {
         return inventoryRepository.save(inventory);
     }
 
+    @Transactional(readOnly = true)
+    public List<Object[]> getLifecycleCosts() {
+        Query query = entityManager.createNativeQuery("""
+                SELECT
+                    a.code,
+                    a.name,
+                    COALESCE(a.purchase_price, 0),
+                    COALESCE(pc.parts_cost, 0) + COALESCE(lc.labor_cost, 0) AS total_repair_cost,
+                    COALESCE(dt.downtime_hours, 0) AS downtime_hours
+                FROM assets a
+                LEFT JOIN (
+                    SELECT sr.asset_id, SUM(slp.quantity * COALESCE(i.unit_cost, 0)) AS parts_cost
+                    FROM service_requests sr
+                    JOIN service_logs sl ON sl.service_request_id = sr.id
+                    JOIN service_log_parts slp ON slp.service_log_id = sl.id
+                    JOIN inventory i ON i.id = slp.inventory_id
+                    GROUP BY sr.asset_id
+                ) pc ON pc.asset_id = a.id
+                LEFT JOIN (
+                    SELECT sr.asset_id, SUM(COALESCE(sl.labor_cost, 0)) AS labor_cost
+                    FROM service_requests sr
+                    JOIN service_logs sl ON sl.service_request_id = sr.id
+                    GROUP BY sr.asset_id
+                ) lc ON lc.asset_id = a.id
+                LEFT JOIN (
+                    SELECT asset_id, SUM(TIMESTAMPDIFF(HOUR, created_at, completed_at)) AS downtime_hours
+                    FROM service_requests
+                    WHERE completed_at IS NOT NULL
+                    GROUP BY asset_id
+                ) dt ON dt.asset_id = a.id
+                """);
+        return resultRows(query);
+    }
+
     @SuppressWarnings("unchecked")
     private List<Object[]> resultRows(Query query) {
         return query.getResultList();

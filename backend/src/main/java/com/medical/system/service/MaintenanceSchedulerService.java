@@ -109,13 +109,13 @@ public class MaintenanceSchedulerService {
 
         // --- Cảnh báo tồn kho thấp ---
         List<LowStockAlertDto> lowStockAlerts = inventoryRepository
-                .findByQuantityLessThanEqual(LOW_STOCK_THRESHOLD)
+                .findItemsWithLowStock()
                 .stream()
                 .map(item -> LowStockAlertDto.builder()
                         .id(item.getId())
                         .partName(item.getPartName())
                         .quantity(item.getQuantity())
-                        .threshold(LOW_STOCK_THRESHOLD)
+                        .threshold(item.getMinQuantity() != null ? item.getMinQuantity() : 0)
                         .build())
                 .collect(Collectors.toList());
 

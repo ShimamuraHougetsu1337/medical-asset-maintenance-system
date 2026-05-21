@@ -22,6 +22,7 @@ import {
   Clock,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { ExportButton } from "@/components/ui/ExportButton";
 
 interface Props {
   stats: DashboardStats;
@@ -54,14 +55,17 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-blue-600" />
-          Manager Dashboard
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Báo cáo tổng hợp tình trạng thiết bị và tồn kho linh kiện.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <BarChart3 className="h-8 w-8 text-blue-600" />
+            Manager Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Báo cáo tổng hợp tình trạng thiết bị và tồn kho linh kiện.
+          </p>
+        </div>
+        <ExportButton url="http://localhost:8080/api/finance/export-lifecycle" filename="lifecycle_cost_analysis.xlsx" label="Lifecycle Cost Analysis" />
       </div>
 
       {/* KPI Summary Cards */}
@@ -177,7 +181,7 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingDown className="h-5 w-5 text-red-500" />
-              Cảnh báo tồn kho thấp
+              Linh kiện sắp hết
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -191,7 +195,7 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
             ) : (
               <div className="space-y-3">
                 {lowStockAlerts.map((alert) => {
-                  const isCritical = alert.quantity <= 5;
+                  const isCritical = alert.quantity <= alert.threshold;
                   return (
                     <div
                       key={alert.id}
@@ -289,11 +293,12 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
 
         {/* Maintenance Schedules Section */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-blue-500" />
               Lịch bảo trì hệ thống (Cron Job)
             </CardTitle>
+            <ExportButton url="http://localhost:8080/api/maintenance-schedules/export" filename="maintenance_schedules.xlsx" label="Export Schedules" size="sm" />
           </CardHeader>
           <CardContent>
             {schedules.length === 0 ? (

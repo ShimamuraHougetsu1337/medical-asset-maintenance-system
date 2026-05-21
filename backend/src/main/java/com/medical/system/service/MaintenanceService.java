@@ -206,6 +206,10 @@ public class MaintenanceService {
                 item.setQuantity(item.getQuantity() - partDto.getQuantity());
                 inventoryRepository.save(item);
 
+                if (item.getMinQuantity() != null && item.getQuantity() <= item.getMinQuantity()) {
+                    System.err.println("CẢNH BÁO ĐỎ (Gửi tới Manager): Linh kiện " + item.getPartName() + " sắp hết (Còn: " + item.getQuantity() + " / Ngưỡng: " + item.getMinQuantity() + ")!");
+                }
+
                 ServiceLogPart logPart = ServiceLogPart.builder()
                         .serviceLog(serviceLog)
                         .inventory(item)

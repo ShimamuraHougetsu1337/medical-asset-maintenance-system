@@ -18,6 +18,7 @@ import { Wrench, Play } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { ExportButton } from "@/components/ui/ExportButton";
 
 interface RepairsViewProps {
   initialRequests: ServiceRequest[];
@@ -49,11 +50,17 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Repair Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage pending and assigned service requests.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Repair Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage pending and assigned service requests.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <ExportButton url="http://localhost:8080/api/service-requests/export-critical" filename="critical_incidents.xlsx" label="Export Critical Log" />
+          <ExportButton url="http://localhost:8080/api/service-requests/export" filename="service_requests_report.xlsx" label="Export Requests" />
+        </div>
       </div>
 
       <div className="rounded-md border shadow-sm bg-card">
@@ -130,12 +137,13 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
                 <TableHead>Resolution</TableHead>
                 <TableHead>Parts Used</TableHead>
                 <TableHead>Date Completed</TableHead>
+                <TableHead className="text-right">Handover</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {completedRequests.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No repair history available.
                   </TableCell>
                 </TableRow>
@@ -171,6 +179,14 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
                     </TableCell>
                     <TableCell>
                       {req.completedAt ? formatDate(req.completedAt) : 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <ExportButton 
+                        url={`http://localhost:8080/api/service-requests/${req.id}/export-protocol`} 
+                        filename={`handover_protocol_${req.id}.xlsx`} 
+                        label="Protocol" 
+                        size="sm"
+                      />
                     </TableCell>
                   </TableRow>
                 ))
