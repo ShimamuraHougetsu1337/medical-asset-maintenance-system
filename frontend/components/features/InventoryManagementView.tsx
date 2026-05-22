@@ -101,15 +101,15 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
 
     if (result.success) {
       const message = existingItem && !editingId 
-        ? `Added ${formData.quantity} units to existing stock: ${existingItem.partName}`
-        : (editingId ? "Item updated" : "New part registered");
+        ? `Đã thêm ${formData.quantity} đơn vị vào linh kiện sẵn có: ${existingItem.partName}`
+        : (editingId ? "Cập nhật linh kiện thành công" : "Đã đăng ký linh kiện mới");
         
       toast.success(message);
       setIsDialogOpen(false);
       resetForm();
       router.refresh();
     } else {
-      toast.error(result.message || "Failed to save item");
+      toast.error(result.message || "Lưu thông tin linh kiện thất bại");
     }
   };
 
@@ -122,7 +122,7 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
     
     const result = await deleteInventoryItem(itemToDelete);
     if (result.success) {
-      toast.success("Item deleted");
+      toast.success("Đã xóa linh kiện thành công");
       router.refresh();
     } else {
       toast.error(result.message);
@@ -142,13 +142,13 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Box className="w-8 h-8 text-amber-600" />
-            Inventory & Spare Parts
+            Kho & Linh kiện thay thế
           </h1>
-          <p className="text-muted-foreground mt-1">Manage stock levels and unit prices for medical spare parts.</p>
+          <p className="text-muted-foreground mt-1">Quản lý mức độ tồn kho và đơn giá cho các linh kiện thiết bị y tế.</p>
         </div>
 
         <div className="flex items-center gap-2">
-          <ExportButton url="http://localhost:8080/api/inventory/export" filename="inventory_report.xlsx" label="Export Inventory" />
+          <ExportButton url="http://localhost:8080/api/inventory/export" filename="inventory_report.xlsx" label="Xuất báo cáo kho" />
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
@@ -157,7 +157,7 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
               render={
                 <Button className="bg-amber-600 hover:bg-amber-700" onClick={() => handleOpenDialog()}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Register New Part
+                  Đăng ký linh kiện mới
                 </Button>
               }
             />
@@ -165,27 +165,27 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSave}>
               <DialogHeader>
-                <DialogTitle>{editingId ? "Edit Part" : "Add New Part"}</DialogTitle>
+                <DialogTitle>{editingId ? "Chỉnh sửa linh kiện" : "Thêm linh kiện mới"}</DialogTitle>
                 <DialogDescription>
                   {editingId
-                    ? "Update the details for this inventory item."
-                    : "Enter the details for the new spare part. If the name matches an existing item, stock will be merged."}
+                    ? "Cập nhật thông tin chi tiết cho linh kiện này."
+                    : "Nhập chi tiết linh kiện mới. Nếu tên trùng khớp với linh kiện đã có, hệ thống sẽ tự động gộp số lượng tồn kho."}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="partName">Part Name</Label>
+                  <Label htmlFor="partName">Tên linh kiện</Label>
                   <Input
                     id="partName"
                     value={formData.partName}
                     onChange={(e) => setFormData({ ...formData, partName: e.target.value })}
-                    placeholder="e.g. MRI Sensor, Battery Pack..."
+                    placeholder="Ví dụ: Cảm biến MRI, Gói pin..."
                     required
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="quantity">Stock Quantity</Label>
+                    <Label htmlFor="quantity">Số lượng tồn kho</Label>
                     <Input
                       id="quantity"
                       type="number"
@@ -196,7 +196,7 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="minQuantity">Minimum Level</Label>
+                    <Label htmlFor="minQuantity">Ngưỡng tối thiểu</Label>
                     <Input
                       id="minQuantity"
                       type="number"
@@ -208,7 +208,7 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="unitPrice">Unit Price ($)</Label>
+                  <Label htmlFor="unitPrice">Đơn giá ($)</Label>
                   <Input
                     id="unitPrice"
                     type="number"
@@ -225,15 +225,15 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
                 <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
                   <Box className="h-4 w-4 text-amber-600 mt-0.5" />
                   <p className="text-xs text-amber-800">
-                    <strong>Note:</strong> A part with this name already exists. Saving will **merge** this quantity into the existing stock.
+                    <strong>Lưu ý:</strong> Linh kiện với tên này đã tồn tại. Việc lưu sẽ tự động **gộp** số lượng mới vào kho hiện tại.
                   </p>
                 </div>
               )}
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" className={isDuplicate ? "bg-blue-600 hover:bg-blue-700" : "bg-amber-600 hover:bg-amber-700"}>
-                  {editingId ? "Update Item" : (isDuplicate ? "Merge Stock" : "Save Part")}
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
+                <Button type="submit" className={isDuplicate ? "bg-blue-600 hover:bg-blue-700" : "bg-amber-600 hover:bg-amber-700 text-white"}>
+                  {editingId ? "Cập nhật" : (isDuplicate ? "Gộp kho" : "Lưu linh kiện")}
                 </Button>
               </DialogFooter>
 
@@ -248,7 +248,7 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by part name..."
+              placeholder="Tìm kiếm theo tên linh kiện..."
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -261,18 +261,18 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="w-[300px]">Part Name</TableHead>
-              <TableHead>Available Stock</TableHead>
-              <TableHead>Unit Price</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[300px]">Tên linh kiện</TableHead>
+              <TableHead>Số lượng khả dụng</TableHead>
+              <TableHead>Đơn giá</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead className="text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredInventory.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">
-                  No parts found in inventory.
+                  Không tìm thấy linh kiện nào trong kho.
                 </TableCell>
               </TableRow>
             ) : (
@@ -280,16 +280,16 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
                 <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
                   <TableCell className="font-semibold">{item.partName}</TableCell>
                   <TableCell>
-                    <span className={item.minQuantity !== undefined && item.quantity <= item.minQuantity ? "text-red-600 font-bold" : ""}>
+                    <span className={item.minQuantity !== undefined && item.quantity <= item.minQuantity ? "text-red-600 font-bold animate-pulse" : ""}>
                       {item.quantity}
                     </span>
                   </TableCell>
                   <TableCell>${item.unitPrice?.toFixed(2) || "0.00"}</TableCell>
                   <TableCell>
                     {item.minQuantity !== undefined && item.quantity <= item.minQuantity ? (
-                      <Badge variant="destructive" className="animate-pulse">Low Stock</Badge>
+                      <Badge variant="destructive" className="animate-pulse bg-red-600">Sắp hết hàng</Badge>
                     ) : (
-                      <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">In Stock</Badge>
+                      <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">Còn hàng</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -319,9 +319,9 @@ export function InventoryManagementView({ initialInventory }: InventoryManagemen
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Inventory Item"
-        description="Are you sure you want to delete this part from inventory? This action cannot be undone."
-        confirmText="Delete Part"
+        title="Xóa linh kiện khỏi kho"
+        description="Bạn có chắc chắn muốn xóa linh kiện này khỏi kho không? Hành động này không thể hoàn tác."
+        confirmText="Xóa linh kiện"
         variant="destructive"
       />
     </div>

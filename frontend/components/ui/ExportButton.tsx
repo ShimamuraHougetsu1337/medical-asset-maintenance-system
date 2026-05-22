@@ -18,7 +18,7 @@ interface ExportButtonProps {
 export function ExportButton({ 
   url, 
   filename, 
-  label = "Export to Excel",
+  label = "Xuất Excel",
   className,
   size,
   variant = "outline"
@@ -31,7 +31,7 @@ export function ExportButton({
     try {
       const token = (session?.user as unknown as { accessToken?: string })?.accessToken;
       if (!token) {
-        toast.error("No authentication token found. Please log in again.");
+        toast.error("Không tìm thấy token xác thực. Vui lòng đăng nhập lại.");
         setLoading(false);
         return;
       }
@@ -42,7 +42,7 @@ export function ExportButton({
         },
       });
 
-      if (!res.ok) throw new Error("Export failed");
+      if (!res.ok) throw new Error("Xuất thất bại");
 
       const blob = await res.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
@@ -53,10 +53,10 @@ export function ExportButton({
       a.click();
       window.URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(a);
-      toast.success("Export successful!");
+      toast.success("Xuất dữ liệu thành công!");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to export report");
+      toast.error("Không thể xuất dữ liệu báo cáo");
     } finally {
       setLoading(false);
       window.focus();
@@ -72,7 +72,7 @@ export function ExportButton({
       className={`gap-2 ${className || ""}`}
     >
       <Download className="h-4 w-4" />
-      {loading ? "Exporting..." : label}
+      {loading ? "Đang xuất..." : label}
     </Button>
   );
 }

@@ -19,7 +19,7 @@ import java.util.List;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.medical.system.repository.ServiceRequestRepository;
-import com.medical.system.dto.ServiceRequestDto;
+import com.medical.system.dto.maintenance.MaintenanceScheduleDto;
 
 /**
  * Controller xử lý vòng đời Service Request: xem danh sách, hoàn thành sửa chữa.
@@ -35,7 +35,7 @@ public class MaintenanceController {
 
     @Operation(summary = "Lấy tất cả phiếu yêu cầu dịch vụ (Engineer/Admin)")
     @GetMapping("/service-requests")
-    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN', 'DOCTOR')")
     public ResponseEntity<ApiResponse<List<ServiceRequestDto>>> getAllServiceRequests() {
         return ResponseEntity.ok(ApiResponse.success(
                 maintenanceService.getAllServiceRequests(),
@@ -44,16 +44,16 @@ public class MaintenanceController {
 
     @Operation(summary = "Lấy danh sách tồn kho linh kiện")
     @GetMapping("/inventory")
-    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<com.medical.system.model.entity.Inventory>>> getAllInventory() {
         return ResponseEntity.ok(ApiResponse.success(
                 maintenanceService.getAllInventory(),
                 "Inventory retrieved successfully"));
     }
 
-    @Operation(summary = "Thêm linh kiện mới (Admin/Manager)")
+    @Operation(summary = "Thêm linh kiện mới (Admin)")
     @PostMapping("/inventory")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<com.medical.system.model.entity.Inventory>> createInventory(
             @RequestBody com.medical.system.dto.inventory.InventoryDto dto) {
         com.medical.system.model.entity.Inventory inventory = com.medical.system.model.entity.Inventory.builder()
@@ -67,9 +67,9 @@ public class MaintenanceController {
                 "Inventory item created successfully"));
     }
 
-    @Operation(summary = "Cập nhật linh kiện (Admin/Manager)")
+    @Operation(summary = "Cập nhật linh kiện (Admin)")
     @PutMapping("/inventory/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<com.medical.system.model.entity.Inventory>> updateInventory(
             @PathVariable Long id,
             @RequestBody com.medical.system.dto.inventory.InventoryDto dto) {
@@ -116,10 +116,10 @@ public class MaintenanceController {
         return ResponseEntity.ok(ApiResponse.success(result, "Maintenance started successfully"));
     }
 
-    @Operation(summary = "Lấy danh sách lịch bảo trì (Admin/Manager)")
+    @Operation(summary = "Lấy danh sách lịch bảo trì (Admin)")
     @GetMapping("/maintenance-schedules")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'ENGINEER')")
-    public ResponseEntity<ApiResponse<List<com.medical.system.dto.maintenance.MaintenanceScheduleDto>>> getMaintenanceSchedules() {
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENGINEER')")
+    public ResponseEntity<ApiResponse<List<MaintenanceScheduleDto>>> getMaintenanceSchedules() {
         return ResponseEntity.ok(ApiResponse.success(
                 maintenanceService.getAllMaintenanceSchedules(),
                 "Maintenance schedules retrieved successfully"));
@@ -127,7 +127,7 @@ public class MaintenanceController {
 
     @Operation(summary = "Export all service requests to Excel")
     @GetMapping("/service-requests/export")
-    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN', 'DOCTOR')")
     public ResponseEntity<byte[]> exportServiceRequests() throws IOException {
         List<ServiceRequestDto> data = maintenanceService.getAllServiceRequests();
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -163,7 +163,7 @@ public class MaintenanceController {
 
     @Operation(summary = "Export inventory to Excel")
     @GetMapping("/inventory/export")
-    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN')")
     public ResponseEntity<byte[]> exportInventory() throws IOException {
         List<com.medical.system.model.entity.Inventory> data = maintenanceService.getAllInventory();
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -199,9 +199,9 @@ public class MaintenanceController {
 
     @Operation(summary = "Export all maintenance schedules to Excel")
     @GetMapping("/maintenance-schedules/export")
-    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN')")
     public ResponseEntity<byte[]> exportMaintenanceSchedules() throws IOException {
-        List<com.medical.system.dto.MaintenanceScheduleDto> data = maintenanceService.getAllMaintenanceSchedules();
+        List<MaintenanceScheduleDto> data = maintenanceService.getAllMaintenanceSchedules();
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Maintenance Schedules");
             Row headerRow = sheet.createRow(0);
@@ -210,7 +210,7 @@ public class MaintenanceController {
                 headerRow.createCell(i).setCellValue(columns[i]);
             }
             int rowIdx = 1;
-            for (com.medical.system.dto.MaintenanceScheduleDto dto : data) {
+            for (MaintenanceScheduleDto dto : data) {
                 Row row = sheet.createRow(rowIdx++);
                 row.createCell(0).setCellValue(dto.getId() != null ? dto.getId() : 0L);
                 row.createCell(1).setCellValue(dto.getAssetCode() != null ? dto.getAssetCode() : "");
@@ -228,7 +228,7 @@ public class MaintenanceController {
 
     @Operation(summary = "Export critical incident log to Excel")
     @GetMapping("/service-requests/export-critical")
-    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ENGINEER', 'ADMIN')")
     public ResponseEntity<byte[]> exportCriticalIncidents() throws IOException {
         List<ServiceRequestDto> data = maintenanceService.getAllServiceRequests().stream()
                 .filter(r -> r.getDescription() != null && 

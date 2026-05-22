@@ -32,10 +32,10 @@ interface Props {
 
 // Màu sắc cho Pie Chart
 const PIE_COLORS: Record<string, string> = {
-  Available: "#22c55e",       // green-500
-  Broken: "#ef4444",          // red-500
-  "Under Maintenance": "#f59e0b", // amber-500
-  "Maintenance Due": "#3b82f6",   // blue-500
+  "Sẵn sàng": "#10b981",       // emerald-500
+  "Hỏng hóc": "#f43f5e",          // rose-500
+  "Đang bảo trì": "#f59e0b", // amber-500
+  "Đến hạn bảo trì": "#0ea5e9",   // sky-500
 };
 
 export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
@@ -43,10 +43,10 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
 
   // Dữ liệu cho Pie Chart thiết bị theo trạng thái
   const pieData = [
-    { name: "Available", value: Number(assetStats.available) },
-    { name: "Broken", value: Number(assetStats.broken) },
-    { name: "Under Maintenance", value: Number(assetStats.underMaintenance) },
-    { name: "Maintenance Due", value: Number(assetStats.maintenanceDue) },
+    { name: "Sẵn sàng", value: Number(assetStats.available) },
+    { name: "Hỏng hóc", value: Number(assetStats.broken) },
+    { name: "Đang bảo trì", value: Number(assetStats.underMaintenance) },
+    { name: "Đến hạn bảo trì", value: Number(assetStats.maintenanceDue) },
   ].filter((d) => d.value > 0); // Bỏ qua trạng thái có giá trị 0
 
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
@@ -59,18 +59,18 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
             <BarChart3 className="h-8 w-8 text-blue-600" />
-            Manager Dashboard
+            Bảng điều khiển quản lý
           </h1>
           <p className="text-muted-foreground mt-2">
             Báo cáo tổng hợp tình trạng thiết bị và tồn kho linh kiện.
           </p>
         </div>
-        <ExportButton url="http://localhost:8080/api/finance/export-lifecycle" filename="lifecycle_cost_analysis.xlsx" label="Lifecycle Cost Analysis" />
+        <ExportButton url="http://localhost:8080/api/finance/export-lifecycle" filename="lifecycle_cost_analysis.xlsx" label="Xuất phân tích vòng đời" />
       </div>
 
       {/* KPI Summary Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-blue-400 bg-blue-50/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tổng thiết bị</CardTitle>
             <Package className="h-4 w-4 text-blue-600" />
@@ -81,31 +81,31 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-l-4 border-l-emerald-400 bg-emerald-50/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Sẵn sàng</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{assetStats.available}</div>
+            <div className="text-3xl font-bold text-emerald-600">{assetStats.available}</div>
             <p className="text-xs text-muted-foreground mt-1">Thiết bị đang hoạt động</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500">
+        <Card className="border-l-4 border-l-rose-400 bg-rose-50/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Hỏng hóc</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertTriangle className="h-4 w-4 text-rose-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">{assetStats.broken}</div>
+            <div className="text-3xl font-bold text-rose-600">{assetStats.broken}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {pendingCount} phiếu chờ xử lý
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-amber-500">
+        <Card className="border-l-4 border-l-amber-400 bg-amber-50/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Đang bảo trì</CardTitle>
             <Wrench className="h-4 w-4 text-amber-600" />
@@ -116,13 +116,13 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-sky-400 bg-sky-50/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Đến hạn bảo trì</CardTitle>
-            <Clock className="h-4 w-4 text-blue-600" />
+            <Clock className="h-4 w-4 text-sky-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{assetStats.maintenanceDue}</div>
+            <div className="text-3xl font-bold text-sky-600">{assetStats.maintenanceDue}</div>
             <p className="text-xs text-muted-foreground mt-1">Cần kiểm tra định kỳ</p>
           </CardContent>
         </Card>
@@ -274,15 +274,19 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
                       </div>
                     </div>
                     <Badge
-                      variant={
+                      className={
                         req.status === "COMPLETED"
-                          ? "secondary"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 border font-medium"
                           : req.status === "PENDING"
-                          ? "destructive"
-                          : "default"
+                          ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 border font-medium"
+                          : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 border font-medium"
                       }
                     >
-                      {req.status}
+                      {req.status === "COMPLETED"
+                        ? "Đã hoàn thành"
+                        : req.status === "PENDING"
+                        ? "Chờ xử lý"
+                        : "Đang sửa chữa"}
                     </Badge>
                   </div>
                 ))}
@@ -290,7 +294,7 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
             )}
           </CardContent>
         </Card>
-
+ 
         {/* Maintenance Schedules Section */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -298,7 +302,7 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
               <Clock className="h-5 w-5 text-blue-500" />
               Lịch bảo trì hệ thống (Cron Job)
             </CardTitle>
-            <ExportButton url="http://localhost:8080/api/maintenance-schedules/export" filename="maintenance_schedules.xlsx" label="Export Schedules" size="sm" />
+            <ExportButton url="http://localhost:8080/api/maintenance-schedules/export" filename="maintenance_schedules.xlsx" label="Xuất lịch bảo trì" size="sm" />
           </CardHeader>
           <CardContent>
             {schedules.length === 0 ? (

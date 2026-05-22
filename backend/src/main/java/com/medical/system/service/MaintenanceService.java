@@ -63,7 +63,13 @@ public class MaintenanceService {
                 .priority(request.getPriority() != null ? request.getPriority() : com.medical.system.model.enums.RequestPriority.LOW)
                 .build();
 
-        return serviceRequestMapper.toDto(serviceRequestRepository.save(serviceRequest));
+        ServiceRequestDto dto = serviceRequestMapper.toDto(serviceRequestRepository.save(serviceRequest));
+        try {
+            com.medical.system.config.WebSocketNotificationHandler.broadcast(objectMapper.writeValueAsString(dto));
+        } catch (Exception e) {
+            // log error or ignore to prevent breaking flow
+        }
+        return dto;
     }
 
     @Transactional(readOnly = true)
@@ -111,6 +117,14 @@ public class MaintenanceService {
 
         if (serviceRequest.getStatus() != RequestStatus.PENDING) {
             throw new BusinessException("Request is already " + serviceRequest.getStatus());
+        }
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+        if (currentUser.getRole() == com.medical.system.model.enums.Role.ENGINEER) {
+            serviceRequest.setAssignedEngineer(currentUser);
         }
 
         serviceRequest.setStatus(RequestStatus.ASSIGNED);
@@ -208,7 +222,7 @@ public class MaintenanceService {
                 inventoryRepository.save(item);
 
                 if (item.getMinQuantity() != null && item.getQuantity() <= item.getMinQuantity()) {
-                    System.err.println("CẢNH BÁO ĐỎ (Gửi tới Manager): Linh kiện " + item.getPartName() + " sắp hết (Còn: " + item.getQuantity() + " / Ngưỡng: " + item.getMinQuantity() + ")!");
+                    System.err.println("CẢNH BÁO ĐỎ (Gửi tới Admin): Linh kiện " + item.getPartName() + " sắp hết (Còn: " + item.getQuantity() + " / Ngưỡng: " + item.getMinQuantity() + ")!");
                 }
 
                 ServiceLogPart logPart = ServiceLogPart.builder()

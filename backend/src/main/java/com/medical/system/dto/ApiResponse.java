@@ -27,8 +27,12 @@ public class ApiResponse<T> {
                 .build();
     }
 
-    public static ApiResponse<Object> error(String message, Object errors) {
-        return ApiResponse.builder()
+    public static <T> ApiResponse<T> error(String message) {
+        return error(message, null);
+    }
+
+    public static <T> ApiResponse<T> error(String message, Object errors) {
+        return ApiResponse.<T>builder()
                 .status("ERROR")
                 .message(message)
                 .errors(errors)

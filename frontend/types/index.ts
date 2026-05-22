@@ -26,13 +26,13 @@ export interface FailureReportRequest {
 export interface User {
   id?: string | number;
   username: string;
-  role: 'ADMIN' | 'DOCTOR' | 'NURSE' | 'ENGINEER' | 'MANAGER';
+  role: 'ADMIN' | 'DOCTOR' | 'ENGINEER';
 }
 
 export interface AuthResponse {
   token: string;
   username: string;
-  role: 'ADMIN' | 'DOCTOR' | 'NURSE' | 'ENGINEER' | 'MANAGER';
+  role: 'ADMIN' | 'DOCTOR' | 'ENGINEER';
 }
 
 export interface ApiResponse<T> {

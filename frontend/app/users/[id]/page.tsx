@@ -46,6 +46,17 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
   const statusVariant = (status: "PENDING" | "ASSIGNED" | "COMPLETED"): "default" | "destructive" | "outline" =>
     status === "COMPLETED" ? "default" : status === "PENDING" ? "destructive" : "outline";
 
+  const roleLabels: Record<string, string> = {
+    DOCTOR: "Bác sĩ",
+    ENGINEER: "Kỹ sư",
+  };
+
+  const statusLabels = {
+    PENDING: "Chờ tiếp nhận",
+    ASSIGNED: "Đang sửa chữa",
+    COMPLETED: "Đã hoàn thành",
+  };
+
   return (
     <div className="space-y-6">
       <Link
@@ -53,12 +64,12 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
         className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to users
+        Quay lại danh sách
       </Link>
 
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">User Details</h2>
-        <p className="text-muted-foreground">View staff account information.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Chi tiết nhân sự</h2>
+        <p className="text-muted-foreground">Xem thông tin chi tiết tài khoản nhân viên.</p>
       </div>
 
       <Card>
@@ -73,17 +84,19 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
         <CardContent>
           <dl className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
-              <dt className="text-sm text-muted-foreground">User ID</dt>
+              <dt className="text-sm text-muted-foreground">Mã ID nhân viên</dt>
               <dd className="mt-1 text-base font-medium">{user.id}</dd>
             </div>
             <div className="rounded-lg border p-4">
-              <dt className="text-sm text-muted-foreground">Username</dt>
+              <dt className="text-sm text-muted-foreground">Tên đăng nhập</dt>
               <dd className="mt-1 text-base font-medium">{user.username}</dd>
             </div>
             <div className="rounded-lg border p-4">
-              <dt className="text-sm text-muted-foreground">Tag</dt>
+              <dt className="text-sm text-muted-foreground">Vai trò hệ thống</dt>
               <dd className="mt-2">
-                <Badge variant={roleVariant(user.role)}>{user.role.toLowerCase()}</Badge>
+                <Badge variant={roleVariant(user.role)}>
+                  {roleLabels[user.role] || user.role}
+                </Badge>
               </dd>
             </div>
           </dl>
@@ -93,25 +106,25 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
       <Card>
         <CardHeader>
           <CardTitle>
-            {user.role === "DOCTOR" ? "Reported Request History" : "Repair History"}
+            {user.role === "DOCTOR" ? "Lịch sử báo cáo sự cố" : "Lịch sử xử lý sửa chữa"}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Asset Name</TableHead>
-                <TableHead>Issue</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date Reported</TableHead>
-                <TableHead>Date Completed</TableHead>
+                <TableHead>Tên thiết bị</TableHead>
+                <TableHead>Sự cố chi tiết</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Ngày báo cáo</TableHead>
+                <TableHead>Ngày hoàn thành</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {userRequests.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                    No request history found.
+                    Không có lịch sử yêu cầu nào.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -124,13 +137,15 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
                       {request.description}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant(request.status)}>{request.status}</Badge>
+                      <Badge variant={statusVariant(request.status)}>
+                        {statusLabels[request.status] || request.status}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      {request.createdAt ? formatDate(request.createdAt) : "N/A"}
+                      {request.createdAt ? formatDate(request.createdAt) : "Không có"}
                     </TableCell>
                     <TableCell>
-                      {request.completedAt ? formatDate(request.completedAt) : "N/A"}
+                      {request.completedAt ? formatDate(request.completedAt) : "Chưa hoàn thành"}
                     </TableCell>
                   </TableRow>
                 ))

@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { signOut } from 'next-auth/react';
 
 interface SidebarProps {
-  userRole?: 'ADMIN' | 'DOCTOR' | 'NURSE' | 'ENGINEER' | 'MANAGER';
+  userRole?: 'ADMIN' | 'DOCTOR' | 'ENGINEER';
 }
 
 export function Sidebar({ userRole }: SidebarProps) {
@@ -17,18 +17,17 @@ export function Sidebar({ userRole }: SidebarProps) {
 
   // Menu items lọc theo vai trò người dùng
   const allNavItems = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'ENGINEER', 'MANAGER'] },
-    { name: 'Analytics', href: '/dashboard', icon: BarChart3, roles: ['ADMIN', 'MANAGER'] },
-    { name: 'Assets & Reporting', href: '/assets', icon: Package, roles: ['ADMIN', 'DOCTOR', 'NURSE'] },
-    { name: 'Repair Requests', href: '/repairs', icon: ClipboardList, roles: ['ADMIN', 'ENGINEER'] },
-    { name: 'Inventory View', href: '/management/inventory', icon: Package, roles: ['ADMIN', 'MANAGER'] },
-    { name: 'Asset Management', href: '/management/assets', icon: Settings, roles: ['ADMIN', 'MANAGER'] },
-    { name: 'Staff Management', href: '/management/staff', icon: User, roles: ['ADMIN'] },
-    { name: 'Inventory', href: '/inventory', icon: Boxes, roles: ['ADMIN', 'ENGINEER'] },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['ADMIN', 'ENGINEER'] },
-    { name: 'Users', href: '/users', icon: Users, roles: ['ADMIN'] },
-    { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'ENGINEER', 'MANAGER'] },
-
+    { name: 'Trang chủ', href: '/', icon: LayoutDashboard, roles: ['ADMIN', 'DOCTOR', 'ENGINEER'] },
+    { name: 'Thống kê tổng quan', href: '/dashboard', icon: BarChart3, roles: ['ADMIN'] },
+    { name: 'Yêu cầu sửa chữa & Thiết bị', href: '/assets', icon: Package, roles: ['ADMIN', 'DOCTOR'] },
+    { name: 'Xử lý sửa chữa', href: '/repairs', icon: ClipboardList, roles: ['ADMIN', 'ENGINEER'] },
+    { name: 'Kho & Linh kiện', href: '/management/inventory', icon: Package, roles: ['ADMIN'] },
+    { name: 'Quản lý thiết bị', href: '/management/assets', icon: Settings, roles: ['ADMIN'] },
+    { name: 'Quản lý nhân sự', href: '/management/staff', icon: User, roles: ['ADMIN'] },
+    { name: 'Quản lý kho', href: '/inventory', icon: Boxes, roles: ['ADMIN', 'ENGINEER'] },
+    { name: 'Báo cáo hiệu suất', href: '/analytics', icon: BarChart3, roles: ['ADMIN', 'ENGINEER'] },
+    { name: 'Tài khoản hệ thống', href: '/users', icon: Users, roles: ['ADMIN'] },
+    { name: 'Cài đặt', href: '/settings', icon: Settings, roles: ['ADMIN', 'DOCTOR', 'ENGINEER'] },
   ];
 
   const filteredItems = allNavItems.filter(item =>
@@ -45,7 +44,7 @@ export function Sidebar({ userRole }: SidebarProps) {
       redirect: true 
     });
     
-    toast.info("Logged out successfully");
+    toast.info("Đăng xuất thành công");
   };
 
   return (
@@ -79,7 +78,7 @@ export function Sidebar({ userRole }: SidebarProps) {
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors"
         >
           <LogOut className="h-5 w-5" />
-          Logout
+          Đăng xuất
         </button>
       </div>
     </div>

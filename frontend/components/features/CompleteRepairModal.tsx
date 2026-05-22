@@ -21,14 +21,14 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2 } from "lucide-react";
 
 const repairSchema = z.object({
-  resolutionDetails: z.string().min(0, "Please provide detailed resolution notes."),
+  resolutionDetails: z.string().min(1, "Vui lòng nhập chi tiết kết quả xử lý sự cố."),
   usedParts: z.array(
     z.object({
-      partId: z.coerce.number().min(1, "Please select a part"),
-      quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+      partId: z.coerce.number().min(1, "Vui lòng chọn linh kiện"),
+      quantity: z.coerce.number().min(1, "Số lượng phải ít nhất là 1"),
     })
   ).default([]),
-  laborCost: z.coerce.number().min(0, "Labor cost cannot be negative").optional(),
+  laborCost: z.coerce.number().min(0, "Chi phí nhân công không được là số âm").optional(),
 });
 
 type UsedPart = {
@@ -86,15 +86,15 @@ export function CompleteRepairModal({ request, isOpen, onClose, inventory }: Com
       );
 
       if (result.success) {
-        toast.success("Repair completed successfully!");
+        toast.success("Báo cáo hoàn thành sửa chữa thành công!");
         reset();
         onClose();
       } else {
-        toast.error(result.message || "Failed to complete repair.");
+        toast.error(result.message || "Không thể hoàn thành sửa chữa.");
       }
     } catch (error) {
       console.error(error); // Log lỗi để debug
-      toast.error("An unexpected error occurred.");
+      toast.error("Đã xảy ra lỗi không mong muốn.");
     } finally {
       setIsSubmitting(false);
     }
@@ -104,15 +104,15 @@ export function CompleteRepairModal({ request, isOpen, onClose, inventory }: Com
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Complete Repair: {request?.assetName}</DialogTitle>
+          <DialogTitle>Hoàn tất sửa chữa: {request?.assetName}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="resolutionDetails">Resolution Details</Label>
+            <Label htmlFor="resolutionDetails">Mô tả phương án xử lý</Label>
             <Textarea
               id="resolutionDetails"
-              placeholder="Describe what was repaired..."
+              placeholder="Nhập chi tiết về cách khắc phục sự cố, bộ phận sửa chữa..."
               {...register("resolutionDetails")}
               className="h-24"
             />
@@ -122,7 +122,7 @@ export function CompleteRepairModal({ request, isOpen, onClose, inventory }: Com
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="laborCost">Labor Cost</Label>
+            <Label htmlFor="laborCost">Chi phí nhân công ($)</Label>
             <Input
               id="laborCost"
               type="number"
@@ -137,14 +137,14 @@ export function CompleteRepairModal({ request, isOpen, onClose, inventory }: Com
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Used Parts (Optional)</Label>
+              <Label>Linh kiện đã sử dụng (Tùy chọn)</Label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => append({ partId: 0, quantity: 1 })}
               >
-                <Plus className="mr-2 h-4 w-4" /> Add Part
+                <Plus className="mr-2 h-4 w-4" /> Thêm linh kiện
               </Button>
             </div>
 
@@ -155,10 +155,10 @@ export function CompleteRepairModal({ request, isOpen, onClose, inventory }: Com
                     {...register(`usedParts.${index}.partId` as const)}
                     className="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <option value="0" disabled>Select part</option>
+                    <option value="0" disabled>Chọn linh kiện</option>
                     {inventory.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.partName} (Stock: {item.quantity})
+                        {item.partName} (Còn: {item.quantity})
                       </option>
                     ))}
                   </select>
@@ -198,10 +198,10 @@ export function CompleteRepairModal({ request, isOpen, onClose, inventory }: Com
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              Cancel
+              Hủy
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Complete Repair"}
+              {isSubmitting ? "Đang gửi..." : "Hoàn tất sửa chữa"}
             </Button>
           </div>
         </form>

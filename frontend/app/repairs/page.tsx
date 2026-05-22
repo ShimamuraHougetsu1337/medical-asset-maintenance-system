@@ -5,6 +5,8 @@ import { ServiceRequest, InventoryItem, User } from "@/types";
 import { assignRepair, getServiceRequests, getInventory, startMaintenance } from "@/actions/repairs";
 import { getUsers } from "@/actions/users";
 import { CompleteRepairModal } from "@/components/features/CompleteRepairModal";
+import { AssignEngineerModal } from "@/components/features/AssignEngineerModal";
+import { useSocket } from "@/components/providers/socket-provider";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -23,10 +25,12 @@ export default function RepairsPage() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [engineers, setEngineers] = useState<User[]>([]);
-  const [currentRole, setCurrentRole] = useState<User["role"] | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRequestForAssign, setSelectedRequestForAssign] = useState<ServiceRequest | null>(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -35,10 +39,10 @@ export default function RepairsPage() {
           .split("; ")
           .find((row) => row.startsWith("user="))
           ?.split("=")[1];
-        const currentUser = userCookie ? JSON.parse(decodeURIComponent(userCookie)) : null;
-        setCurrentRole(currentUser?.role ?? null);
+        const loggedUser = userCookie ? JSON.parse(decodeURIComponent(userCookie)) : null;
+        setCurrentUser(loggedUser);
 
-        const shouldLoadUsers = currentUser?.role === "ADMIN";
+        const shouldLoadUsers = loggedUser?.role === "ADMIN";
         const [reqs, inv, users] = await Promise.all([
           getServiceRequests(),
           getInventory(),
@@ -54,17 +58,31 @@ export default function RepairsPage() {
       }
     }
     loadData();
-  }, [isModalOpen]); // Reload when modal closes to show updated data
+  }, [isModalOpen, isAssignModalOpen]); // Load lại khi modal đóng để cập nhật dữ liệu mới nhất
+
+  const { subscribe } = useSocket();
+
+  useEffect(() => {
+    const unsubscribe = subscribe("new-repair-request", (newRequest: ServiceRequest) => {
+      setRequests((prev) => {
+        if (prev.some((r) => r.id === newRequest.id)) {
+          return prev;
+        }
+        return [newRequest, ...prev];
+      });
+    });
+    return unsubscribe;
+  }, [subscribe]);
 
   const handleStartMaintenance = async (id: string | number) => {
     const result = await startMaintenance(id);
     if (result.success) {
-      toast.success("Maintenance started. Asset status updated to UNDER_MAINTENANCE");
+      toast.success("Đã tiếp nhận yêu cầu sửa chữa. Trạng thái thiết bị được cập nhật thành Đang bảo trì.");
       const [reqs, inv] = await Promise.all([getServiceRequests(), getInventory()]);
       setRequests(reqs);
       setInventory(inv);
     } else {
-      toast.error(result.message);
+      toast.error(result.message || "Lỗi tiếp nhận yêu cầu sửa chữa.");
     }
   };
 
@@ -73,30 +91,46 @@ export default function RepairsPage() {
     setIsModalOpen(true);
   };
 
-  const handleAssignClick = async (request: ServiceRequest) => {
-    const engineer = engineers[0];
+  const handleAssignClick = (request: ServiceRequest) => {
+    setSelectedRequestForAssign(request);
+    setIsAssignModalOpen(true);
+  };
 
-    if (!engineer?.id) {
-      toast.error("No engineer account found");
-      return;
-    }
+  const handleAssignSuccess = async () => {
+    const [reqs, inv] = await Promise.all([getServiceRequests(), getInventory()]);
+    setRequests(reqs);
+    setInventory(inv);
+  };
 
-    const result = await assignRepair(request.id as string, engineer.id as string);
-
-    if (result.success) {
-      toast.success(`Assigned to ${engineer.username}`);
-      const [reqs, inv] = await Promise.all([getServiceRequests(), getInventory()]);
-      setRequests(reqs);
-      setInventory(inv);
-    } else {
-      toast.error(result.message || "Failed to assign repair");
+  const renderStatusBadge = (status: ServiceRequest['status']) => {
+    switch (status) {
+      case 'PENDING':
+        return (
+          <Badge className="bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 border font-medium">
+            Chờ xử lý
+          </Badge>
+        );
+      case 'ASSIGNED':
+        return (
+          <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 border font-medium">
+            Đang sửa chữa
+          </Badge>
+        );
+      case 'COMPLETED':
+        return (
+          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 border font-medium">
+            Đã hoàn thành
+          </Badge>
+        );
+      default:
+        return <Badge>{status}</Badge>;
     }
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-pulse text-lg text-muted-foreground">Loading repair requests...</div>
+        <div className="animate-pulse text-lg text-muted-foreground">Đang tải danh sách yêu cầu sửa chữa...</div>
       </div>
     );
   }
@@ -107,9 +141,9 @@ export default function RepairsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Repair Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Bảng điều khiển sửa chữa</h1>
         <p className="text-muted-foreground mt-2">
-          Manage pending and assigned service requests.
+          Quản lý các yêu cầu sửa chữa thiết bị đang chờ xử lý và đã phân công.
         </p>
       </div>
 
@@ -117,98 +151,112 @@ export default function RepairsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Asset Name</TableHead>
-              <TableHead>Reported By</TableHead>
-              <TableHead>Assigned Engineer</TableHead>
-              <TableHead>Issue Description</TableHead>
-              <TableHead>Date Reported</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead>Tên thiết bị</TableHead>
+              <TableHead>Người báo cáo</TableHead>
+              <TableHead>Kỹ sư phụ trách</TableHead>
+              <TableHead>Mô tả sự cố</TableHead>
+              <TableHead>Ngày báo cáo</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead className="text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {activeRequests.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  No pending repairs found.
+                  Không tìm thấy yêu cầu sửa chữa nào đang chờ.
                 </TableCell>
               </TableRow>
             ) : (
-              activeRequests.map((req) => (
-                <TableRow key={req.id}>
-                  <TableCell className="font-medium">{req.asset?.name ?? req.assetName ?? 'N/A'}</TableCell>
-                  <TableCell>{req.reportedBy?.username ?? req.reportedByUsername ?? 'N/A'}</TableCell>
-                  <TableCell>{req.assignedEngineerUsername ?? 'Unassigned'}</TableCell>
-                  <TableCell className="max-w-xs truncate" title={req.description}>
-                    {req.description}
-                  </TableCell>
-                  <TableCell>
-                    {req.createdAt ? formatDate(req.createdAt) : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={req.status === 'PENDING' ? 'destructive' : 'default'}>
-                      {req.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {currentRole === "ADMIN" && req.status === "PENDING" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAssignClick(req)}
-                      >
-                        <Send className="w-4 h-4 mr-2" />
-                        Assign
-                      </Button>
-                    ) : currentRole === "ENGINEER" && req.status === "PENDING" ? (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                        onClick={() => handleStartMaintenance(req.id)}
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        Start
-                      </Button>
-                    ) : currentRole === "ENGINEER" && req.status === "ASSIGNED" ? (
-                      <Button
-                        size="sm"
-                        onClick={() => handleCompleteClick(req)}
-                      >
-                        <Wrench className="w-4 h-4 mr-2" />
-                        Complete
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        {req.status === "PENDING" ? "Waiting assignment" : "Assigned"}
-                      </span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
+              activeRequests.map((req) => {
+                const isAssignedToMe = Number(req.assignedEngineerId) === Number(currentUser?.id) || 
+                  (req.assignedEngineerUsername && req.assignedEngineerUsername === currentUser?.username);
+                return (
+                  <TableRow key={req.id}>
+                    <TableCell className="font-medium">{req.asset?.name ?? req.assetName ?? 'N/A'}</TableCell>
+                    <TableCell>{req.reportedBy?.username ?? req.reportedByUsername ?? 'N/A'}</TableCell>
+                    <TableCell>{req.assignedEngineerUsername ?? 'Chưa phân công'}</TableCell>
+                    <TableCell className="max-w-xs truncate" title={req.description}>
+                      {req.description}
+                    </TableCell>
+                    <TableCell>
+                      {req.createdAt ? formatDate(req.createdAt) : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {renderStatusBadge(req.status)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {req.status === "PENDING" ? (
+                        currentUser?.role === "ADMIN" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAssignClick(req)}
+                          >
+                            <Send className="w-4 h-4 mr-2" />
+                            Phân công
+                          </Button>
+                        ) : currentUser?.role === "ENGINEER" ? (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                            onClick={() => handleStartMaintenance(req.id)}
+                          >
+                            <Play className="w-4 h-4 mr-2" />
+                            Tiếp nhận
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Chờ phân công
+                          </span>
+                        )
+                      ) : req.status === "ASSIGNED" ? (
+                        currentUser?.role === "ENGINEER" && isAssignedToMe ? (
+                          <Button
+                            size="sm"
+                            onClick={() => handleCompleteClick(req)}
+                          >
+                            <Wrench className="w-4 h-4 mr-2" />
+                            Hoàn thành
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground font-medium text-amber-700">
+                            Đang thực hiện (Kỹ sư: {req.assignedEngineerUsername || "Chưa rõ"})
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-xs text-emerald-600 font-semibold">
+                          Hoàn thành
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold tracking-tight">Repair History</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Lịch sử sửa chữa</h2>
         <div className="rounded-md border shadow-sm bg-card">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Asset Name</TableHead>
-                <TableHead>Issue</TableHead>
-                <TableHead>Resolution</TableHead>
-                <TableHead>Parts Used</TableHead>
-                <TableHead>Date Completed</TableHead>
+                <TableHead>Tên thiết bị</TableHead>
+                <TableHead>Sự cố</TableHead>
+                <TableHead>Phương án xử lý</TableHead>
+                <TableHead>Linh kiện sử dụng</TableHead>
+                <TableHead>Ngày hoàn thành</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {completedRequests.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No repair history available.
+                    Không tìm thấy lịch sử sửa chữa.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -225,7 +273,7 @@ export default function RepairsPage() {
                           <p className="text-sm italic">&quot;{req.logs[0].resolutionDetails}&quot;</p>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground italic">No details provided</span>
+                        <span className="text-muted-foreground italic">Không có chi tiết</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -238,7 +286,7 @@ export default function RepairsPage() {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">None</span>
+                        <span className="text-xs text-muted-foreground">Không sử dụng</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -257,6 +305,15 @@ export default function RepairsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         inventory={inventory}
+      />
+
+      <AssignEngineerModal
+        request={selectedRequestForAssign}
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        engineers={engineers}
+        onAssignSuccess={handleAssignSuccess}
+        onAssignAction={assignRepair}
       />
     </div>
   );

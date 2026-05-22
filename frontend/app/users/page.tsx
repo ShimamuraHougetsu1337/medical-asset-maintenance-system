@@ -8,13 +8,13 @@ export default async function UsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">User Management</h2>
-        <p className="text-muted-foreground">View hospital staff accounts by role.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Quản lý tài khoản</h2>
+        <p className="text-muted-foreground">Xem danh sách tài khoản nhân sự bệnh viện theo vai trò.</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Doctors and Engineers</CardTitle>
+          <CardTitle>Danh sách Bác sĩ và Kỹ sư thiết bị</CardTitle>
         </CardHeader>
         <CardContent>
           <UserListTable users={users} />

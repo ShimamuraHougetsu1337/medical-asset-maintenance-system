@@ -12,17 +12,17 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ requests, userRole }: DashboardViewProps) {
-  const isManagement = ['ADMIN', 'MANAGER', 'ENGINEER'].includes(userRole || '');
+  const isManagement = ['ADMIN', 'ENGINEER'].includes(userRole || '');
 
   const pendingCount = requests.filter(r => r.status === 'PENDING').length;
   const inProgressCount = requests.filter(r => r.status === 'ASSIGNED').length;
   const completedCount = requests.filter(r => r.status === 'COMPLETED').length;
   
   const stats = [
-    { name: 'Total Tickets', value: requests.length, icon: Package, color: 'text-blue-600' },
-    { name: 'Pending Repairs', value: pendingCount, icon: AlertTriangle, color: 'text-red-600' },
-    { name: 'In Progress', value: inProgressCount, icon: Wrench, color: 'text-amber-600' },
-    { name: 'Completed Total', value: completedCount, icon: CheckCircle, color: 'text-green-600' },
+    { name: 'Tổng số phiếu', value: requests.length, icon: Package, color: 'text-blue-600' },
+    { name: 'Yêu cầu chờ xử lý', value: pendingCount, icon: AlertTriangle, color: 'text-red-600' },
+    { name: 'Đang sửa chữa', value: inProgressCount, icon: Wrench, color: 'text-amber-600' },
+    { name: 'Đã hoàn thành', value: completedCount, icon: CheckCircle, color: 'text-green-600' },
   ];
 
   const recentLogs = requests
@@ -33,8 +33,8 @@ export function DashboardView({ requests, userRole }: DashboardViewProps) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Dashboard Overview</h2>
-        <p className="text-muted-foreground">Quick summary of the hospital&apos;s asset maintenance status.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Tổng quan bảng điều khiển</h2>
+        <p className="text-muted-foreground">Tóm tắt nhanh tình trạng bảo trì thiết bị của bệnh viện.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -55,12 +55,12 @@ export function DashboardView({ requests, userRole }: DashboardViewProps) {
         {isManagement ? (
           <Card className="col-span-4">
             <CardHeader>
-              <CardTitle>Recent Maintenance Activity</CardTitle>
+              <CardTitle>Hoạt động bảo trì gần đây</CardTitle>
             </CardHeader>
             <CardContent>
               {recentLogs.length === 0 ? (
                 <div className="text-sm text-muted-foreground italic py-4">
-                  No recent maintenance logs found.
+                  Không tìm thấy lịch sử bảo trì gần đây.
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -77,7 +77,7 @@ export function DashboardView({ requests, userRole }: DashboardViewProps) {
                             {formatDate(req.completedAt!)}
                           </span>
                         </div>
-                        <p className="text-xs text-muted-foreground">Engineer: {req.logs![0].engineerUsername}</p>
+                        <p className="text-xs text-muted-foreground">Kỹ sư: {req.logs![0].engineerUsername}</p>
                         <p className="text-sm line-clamp-1 italic text-muted-foreground">
                           &quot;{req.logs![0].resolutionDetails}&quot;
                         </p>
@@ -91,11 +91,11 @@ export function DashboardView({ requests, userRole }: DashboardViewProps) {
         ) : (
           <Card className="col-span-4">
             <CardHeader>
-              <CardTitle>System Announcements</CardTitle>
+              <CardTitle>Thông báo hệ thống</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground py-4">
-                Welcome to the Medical Asset Management System. Please use the &quot;Assets &amp; Reporting&quot; tab to report any equipment failure.
+                Chào mừng bạn đến với Hệ thống Quản lý Thiết bị Y tế. Vui lòng sử dụng tab &quot;Thiết bị &amp; Báo cáo&quot; để báo cáo bất kỳ sự cố thiết bị nào.
               </div>
             </CardContent>
           </Card>
@@ -103,7 +103,7 @@ export function DashboardView({ requests, userRole }: DashboardViewProps) {
 
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Repair Backlog</CardTitle>
+            <CardTitle>Danh sách chờ sửa chữa</CardTitle>
           </CardHeader>
           <CardContent>
              <div className="space-y-4">
@@ -117,10 +117,10 @@ export function DashboardView({ requests, userRole }: DashboardViewProps) {
                 </div>
               ))}
               {pendingCount > 4 && (
-                <p className="text-xs text-center text-muted-foreground">+{pendingCount - 4} more pending requests</p>
+                <p className="text-xs text-center text-muted-foreground">+{pendingCount - 4} yêu cầu đang chờ khác</p>
               )}
               {pendingCount === 0 && (
-                <div className="text-sm text-muted-foreground italic py-4">No pending repairs.</div>
+                <div className="text-sm text-muted-foreground italic py-4">Không có yêu cầu sửa chữa nào đang chờ.</div>
               )}
             </div>
           </CardContent>

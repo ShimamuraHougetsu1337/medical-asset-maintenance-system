@@ -71,7 +71,8 @@ public class FinanceController {
                 row.createCell(1).setCellValue(dto.getAssetName());
                 row.createCell(2).setCellValue(dto.getPurchasePrice() != null ? dto.getPurchasePrice().doubleValue() : 0);
                 row.createCell(3).setCellValue(dto.getTotalRepairCost() != null ? dto.getTotalRepairCost().doubleValue() : 0);
-                row.createCell(4).setCellValue(dto.getRepairToPurchaseRatioPercent() != null ? dto.getRepairToPurchaseRatioPercent().doubleValue() : 0);
+                Cell cellRatio = row.createCell(4);
+                cellRatio.setCellFormula(String.format("IF(C%d>0, (D%d/C%d)*100, 0)", rowIdx, rowIdx, rowIdx));
             }
             workbook.write(out);
             return ResponseEntity.ok()
@@ -100,14 +101,11 @@ public class FinanceController {
                 
                 double purchasePrice = row[2] != null ? ((Number) row[2]).doubleValue() : 0.0;
                 double totalRepairCost = row[3] != null ? ((Number) row[3]).doubleValue() : 0.0;
-                double ratio = 0.0;
-                if (purchasePrice > 0) {
-                    ratio = (totalRepairCost / purchasePrice) * 100;
-                }
                 
                 r.createCell(2).setCellValue(purchasePrice);
                 r.createCell(3).setCellValue(totalRepairCost);
-                r.createCell(4).setCellValue(ratio);
+                Cell cellRatio = r.createCell(4);
+                cellRatio.setCellFormula(String.format("IF(C%d>0, (D%d/C%d)*100, 0)", rowIdx, rowIdx, rowIdx));
                 r.createCell(5).setCellValue(row[4] != null ? ((Number) row[4]).longValue() : 0L);
             }
             workbook.write(out);

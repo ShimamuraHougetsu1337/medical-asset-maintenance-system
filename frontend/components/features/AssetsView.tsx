@@ -20,40 +20,44 @@ interface AssetsViewProps {
 }
 
 export function AssetsView({ assets, userRole }: AssetsViewProps) {
-  const canReportFailure = ['ADMIN', 'DOCTOR', 'NURSE'].includes(userRole || '');
+  const canReportFailure = ['ADMIN', 'DOCTOR'].includes(userRole || '');
 
-  const getStatusVariant = (status: Asset['status']): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case 'AVAILABLE': return 'secondary';
-      case 'BROKEN': return 'destructive';
-      case 'UNDER_MAINTENANCE': return 'outline';
-      case 'MAINTENANCE_DUE': return 'default'; // Or a specific color if defined
-      default: return 'default';
-    }
+  const statusLabels: Record<Asset['status'], string> = {
+    AVAILABLE: "Sẵn sàng",
+    BROKEN: "Hỏng hóc",
+    UNDER_MAINTENANCE: "Đang bảo trì",
+    MAINTENANCE_DUE: "Đến hạn bảo trì",
+  };
+
+  const statusBadgeStyles: Record<Asset['status'], string> = {
+    AVAILABLE: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 border font-medium",
+    UNDER_MAINTENANCE: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 border font-medium",
+    BROKEN: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 border font-medium",
+    MAINTENANCE_DUE: "bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100 border font-medium",
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Asset Inventory</h2>
-          <p className="text-muted-foreground">Manage and track hospital medical equipment.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Danh mục thiết bị</h2>
+          <p className="text-muted-foreground">Quản lý và theo dõi danh sách trang thiết bị y tế của bệnh viện.</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Assets</CardTitle>
+          <CardTitle>Tất cả thiết bị</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Asset Name</TableHead>
-                <TableHead>Asset Code</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Next Maintenance</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Tên thiết bị</TableHead>
+                <TableHead>Mã thiết bị</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Bảo trì tiếp theo</TableHead>
+                <TableHead className="text-right">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -62,15 +66,15 @@ export function AssetsView({ assets, userRole }: AssetsViewProps) {
                   <TableCell className="font-medium">{asset.name}</TableCell>
                   <TableCell>{asset.code}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(asset.status)}>
-                      {asset.status.replace('_', ' ')}
+                    <Badge className={statusBadgeStyles[asset.status]}>
+                      {statusLabels[asset.status] || asset.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     {asset.nextMaintenanceDate ? (
                       <span className="text-sm">{formatDate(asset.nextMaintenanceDate)}</span>
                     ) : (
-                      <span className="text-xs text-muted-foreground italic">N/A</span>
+                      <span className="text-xs text-muted-foreground italic">Không có</span>
                     )}
                   </TableCell>
 

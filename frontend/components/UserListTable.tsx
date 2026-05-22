@@ -51,10 +51,15 @@ export function UserListTable({ users }: UserListTableProps) {
   };
 
   const filterOptions: { label: string; value: RoleFilter }[] = [
-    { label: "All", value: "ALL" },
-    { label: "Doctor", value: "DOCTOR" },
-    { label: "Engineer", value: "ENGINEER" },
+    { label: "Tất cả", value: "ALL" },
+    { label: "Bác sĩ", value: "DOCTOR" },
+    { label: "Kỹ sư", value: "ENGINEER" },
   ];
+
+  const roleLabels: Record<string, string> = {
+    DOCTOR: "Bác sĩ",
+    ENGINEER: "Kỹ sư",
+  };
 
   return (
     <div className="space-y-4">
@@ -64,7 +69,7 @@ export function UserListTable({ users }: UserListTableProps) {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search username"
+            placeholder="Tìm kiếm tên tài khoản..."
             className="pl-8"
           />
         </div>
@@ -91,16 +96,16 @@ export function UserListTable({ users }: UserListTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Username</TableHead>
-            <TableHead>Tag</TableHead>
-            <TableHead className="text-right">Action</TableHead>
+            <TableHead>Tên đăng nhập</TableHead>
+            <TableHead>Vai trò</TableHead>
+            <TableHead className="text-right">Thao tác</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredUsers.length === 0 ? (
             <TableRow>
               <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">
-                No users match the current filters.
+                Không tìm thấy nhân viên nào phù hợp với bộ lọc.
               </TableCell>
             </TableRow>
           ) : (
@@ -109,7 +114,7 @@ export function UserListTable({ users }: UserListTableProps) {
                 <TableCell className="font-medium">{user.username}</TableCell>
                 <TableCell>
                   <Badge variant={getRoleVariant(user.role)}>
-                    {user.role.toLowerCase()}
+                    {roleLabels[user.role] || user.role}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -117,7 +122,7 @@ export function UserListTable({ users }: UserListTableProps) {
                     href={`/users/${user.id}`}
                     className="inline-flex h-7 items-center justify-center rounded-lg border px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted"
                   >
-                    View
+                    Chi tiết
                   </Link>
                 </TableCell>
               </TableRow>

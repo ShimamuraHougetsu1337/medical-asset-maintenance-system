@@ -37,6 +37,7 @@ public class StaffController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<UserDto>>> getAllStaff() {
         List<UserDto> dtos = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.DOCTOR || u.getRole() == Role.ENGINEER)
                 .map(u -> UserDto.builder()
                         .id(u.getId())
                         .username(u.getUsername())
@@ -50,6 +51,9 @@ public class StaffController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserDto>> createStaff(@RequestBody UserDto dto) {
+        if (dto.getRole() != Role.DOCTOR && dto.getRole() != Role.ENGINEER) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Chỉ được phép tạo tài khoản có vai trò Bác sĩ hoặc Kỹ sư."));
+        }
         User user = User.builder()
                 .username(dto.getUsername())
                 .password(passwordEncoder.encode(dto.getPassword()))
@@ -68,6 +72,13 @@ public class StaffController {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Staff member not found"));
 
+        if (user.getRole() != Role.DOCTOR && user.getRole() != Role.ENGINEER) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Không được phép chỉnh sửa tài khoản có vai trò đặc biệt."));
+        }
+        if (dto.getRole() != Role.DOCTOR && dto.getRole() != Role.ENGINEER) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Chỉ được phép đổi sang vai trò Bác sĩ hoặc Kỹ sư."));
+        }
+
         user.setUsername(dto.getUsername());
         user.setRole(dto.getRole());
         
@@ -82,10 +93,14 @@ public class StaffController {
     }
 
     @Operation(summary = "Xóa nhân viên (Admin)")
-
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteStaff(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Staff member not found"));
+        if (user.getRole() != Role.DOCTOR && user.getRole() != Role.ENGINEER) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Không được phép xóa tài khoản có vai trò đặc biệt."));
+        }
         userRepository.deleteById(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Staff member deleted successfully"));
     }

@@ -66,3 +66,43 @@ export async function logout() {
   cookies().delete("token");
   cookies().delete("user");
 }
+
+export async function changePassword(formData: unknown) {
+  try {
+    const token = cookies().get("token")?.value;
+    if (!token) {
+      return { success: false, message: "Unauthorized: No session token found" };
+    }
+
+    const response = await fetch(`${API_URL}/auth/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(formData),
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const body = await response.text();
+      return {
+        success: false,
+        message: `Backend returned ${response.status}: ${body.slice(0, 120)}`,
+      };
+    }
+
+    const result: ApiResponse<string> = await response.json();
+    if (response.ok) {
+      return { success: true, message: result.message || "Password changed successfully" };
+    }
+
+    return {
+      success: false,
+      message: result.message || `Password change failed with status ${response.status}`,
+    };
+  } catch (error) {
+    console.error("Change password server action error:", error);
+    return { success: false, message: "Server connection failed: " + (error as Error).message };
+  }
+}

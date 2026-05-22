@@ -22,14 +22,14 @@ import { Loader2, AlertCircle } from "lucide-react";
 
 const formSchema = z.object({
   description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
+    message: "Mô tả chi tiết phải chứa ít nhất 10 ký tự.",
   }),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
 }).superRefine((data, ctx) => {
   if (data.priority === "CRITICAL" && data.description.length < 20) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "CRITICAL priority requires detailed reason (>20 characters).",
+      message: "Độ ưu tiên KHẨN CẤP yêu cầu lý do chi tiết hơn (ít nhất 20 ký tự).",
       path: ["description"],
     });
   }
@@ -59,15 +59,15 @@ export function ReportFailureForm({ assetId, assetName, onSuccess }: ReportFailu
       const result = await reportAssetFailure(assetId, values.description, values.priority);
       
       if (result.success) {
-        toast.success("Failure reported successfully");
+        toast.success("Báo cáo sự cố thành công!");
         setOpen(false);
         form.reset();
         if (onSuccess) onSuccess();
       } else {
-        toast.error(result.message || "Failed to report failure. Please try again.");
+        toast.error(result.message || "Gửi báo cáo sự cố thất bại. Vui lòng thử lại.");
       }
     } catch (error) {
-      toast.error("An unexpected error occurred.");
+      toast.error("Đã xảy ra lỗi không mong muốn.");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -80,7 +80,7 @@ export function ReportFailureForm({ assetId, assetName, onSuccess }: ReportFailu
         render={
           <Button variant="destructive" size="sm" className="gap-2">
             <AlertCircle className="h-4 w-4" />
-            Report Failure
+            Báo cáo sự cố
           </Button>
         }
       />
@@ -88,17 +88,17 @@ export function ReportFailureForm({ assetId, assetName, onSuccess }: ReportFailu
 
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Report Equipment Failure</DialogTitle>
+          <DialogTitle>Báo cáo sự cố thiết bị</DialogTitle>
           <DialogDescription>
-            Reporting an issue for <strong>{assetName}</strong>. This will notify the maintenance team.
+            Đang báo cáo sự cố cho thiết bị <strong>{assetName}</strong>. Yêu cầu này sẽ được gửi trực tiếp tới đội kỹ sư bảo trì.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="description">Description of the issue</Label>
+            <Label htmlFor="description">Mô tả chi tiết sự cố</Label>
             <Textarea
               id="description"
-              placeholder="Please describe what happened..."
+              placeholder="Vui lòng nhập chi tiết sự cố xảy ra..."
               className="min-h-[100px]"
               {...form.register("description")}
             />
@@ -107,25 +107,25 @@ export function ReportFailureForm({ assetId, assetName, onSuccess }: ReportFailu
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="priority">Priority</Label>
+            <Label htmlFor="priority">Mức độ ưu tiên</Label>
             <select
               id="priority"
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               {...form.register("priority")}
             >
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
+              <option value="LOW">Thấp (Low)</option>
+              <option value="MEDIUM">Trung bình (Medium)</option>
+              <option value="HIGH">Cao (High)</option>
+              <option value="CRITICAL">Khẩn cấp (Critical)</option>
             </select>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              Hủy
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Submit Report
+              Gửi báo cáo
             </Button>
           </DialogFooter>
         </form>

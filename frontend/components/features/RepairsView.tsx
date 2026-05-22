@@ -33,7 +33,7 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
   const handleStartMaintenance = async (id: string | number) => {
     const result = await startMaintenance(id);
     if (result.success) {
-      toast.success("Maintenance started. Asset status updated to UNDER_MAINTENANCE");
+      toast.success("Bắt đầu sửa chữa. Trạng thái thiết bị cập nhật thành ĐANG BẢO TRÌ.");
       router.refresh();
     } else {
       toast.error(result.message);
@@ -56,14 +56,14 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Repair Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Bảng yêu cầu sửa chữa</h1>
           <p className="text-muted-foreground mt-2">
-            Manage pending and assigned service requests.
+            Quản lý và tiếp nhận các yêu cầu sửa chữa, bảo trì thiết bị từ các khoa phòng.
           </p>
         </div>
         <div className="flex gap-2">
-          <ExportButton url="http://localhost:8080/api/service-requests/export-critical" filename="critical_incidents.xlsx" label="Export Critical Log" />
-          <ExportButton url="http://localhost:8080/api/service-requests/export" filename="service_requests_report.xlsx" label="Export Requests" />
+          <ExportButton url="http://localhost:8080/api/service-requests/export-critical" filename="critical_incidents.xlsx" label="Xuất nhật ký khẩn cấp" />
+          <ExportButton url="http://localhost:8080/api/service-requests/export" filename="service_requests_report.xlsx" label="Xuất danh sách yêu cầu" />
         </div>
       </div>
 
@@ -71,20 +71,20 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Asset Name</TableHead>
-              <TableHead>Reported By</TableHead>
-              <TableHead>Issue Description</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>Date Reported</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead>Tên thiết bị</TableHead>
+              <TableHead>Người báo cáo</TableHead>
+              <TableHead>Mô tả sự cố</TableHead>
+              <TableHead>Độ ưu tiên</TableHead>
+              <TableHead>Ngày báo cáo</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead className="text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {activeRequests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No pending repairs found.
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground italic">
+                  Không có yêu cầu sửa chữa nào đang chờ xử lý.
                 </TableCell>
               </TableRow>
             ) : (
@@ -97,17 +97,27 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
                   </TableCell>
                   <TableCell>
                     {req.priority === 'CRITICAL' ? (
-                      <Badge variant="destructive" className="animate-pulse">CRITICAL</Badge>
+                      <Badge variant="destructive" className="animate-pulse bg-red-600">KHẨN CẤP</Badge>
                     ) : (
-                      <Badge variant="outline">{req.priority || 'LOW'}</Badge>
+                      <Badge variant="outline" className={
+                        req.priority === 'HIGH' ? 'text-orange-600 border-orange-200 bg-orange-50' :
+                        req.priority === 'MEDIUM' ? 'text-amber-600 border-amber-200 bg-amber-50' :
+                        'text-slate-600 border-slate-200 bg-slate-50'
+                      }>
+                        {req.priority === 'HIGH' ? 'CAO' : req.priority === 'MEDIUM' ? 'TRUNG BÌNH' : 'THẤP'}
+                      </Badge>
                     )}
                   </TableCell>
                   <TableCell>
                     {req.createdAt ? formatDate(req.createdAt) : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={req.status === 'PENDING' ? 'destructive' : 'default'}>
-                      {req.status}
+                    <Badge variant={req.status === 'PENDING' ? 'destructive' : 'default'} className={
+                      req.status === 'PENDING' ? 'bg-red-100 text-red-800 hover:bg-red-200 border-red-200' :
+                      req.status === 'ASSIGNED' ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200' :
+                      'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200'
+                    }>
+                      {req.status === 'PENDING' ? 'Chờ xử lý' : req.status === 'ASSIGNED' ? 'Đang thực hiện' : req.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -119,15 +129,16 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
                         onClick={() => handleStartMaintenance(req.id)}
                       >
                         <Play className="w-4 h-4 mr-2" />
-                        Start
+                        Tiếp nhận
                       </Button>
                     ) : (
                       <Button 
                         size="sm" 
                         onClick={() => handleCompleteClick(req)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         <Wrench className="w-4 h-4 mr-2" />
-                        Complete
+                        Hoàn thành
                       </Button>
                     )}
                   </TableCell>
@@ -139,24 +150,24 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold tracking-tight">Repair History</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Lịch sử sửa chữa & bảo trì</h2>
         <div className="rounded-md border shadow-sm bg-card">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Asset Name</TableHead>
-                <TableHead>Issue</TableHead>
-                <TableHead>Resolution</TableHead>
-                <TableHead>Parts Used</TableHead>
-                <TableHead>Date Completed</TableHead>
-                <TableHead className="text-right">Handover</TableHead>
+                <TableHead>Tên thiết bị</TableHead>
+                <TableHead>Sự cố</TableHead>
+                <TableHead>Phương án xử lý</TableHead>
+                <TableHead>Linh kiện đã dùng</TableHead>
+                <TableHead>Ngày hoàn thành</TableHead>
+                <TableHead className="text-right">Biên bản bàn giao</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {completedRequests.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No repair history available.
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground italic">
+                    Không có lịch sử sửa chữa nào.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -169,11 +180,11 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
                     <TableCell className="max-w-xs">
                       {req.logs && req.logs.length > 0 ? (
                         <div>
-                          <p className="text-sm font-semibold text-primary">{req.logs[0].engineerUsername}</p>
+                          <p className="text-sm font-semibold text-primary">Kỹ sư: {req.logs[0].engineerUsername}</p>
                           <p className="text-sm italic">&quot;{req.logs[0].resolutionDetails}&quot;</p>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground italic">No details provided</span>
+                        <span className="text-muted-foreground italic text-xs">Không có chi tiết xử lý</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -186,7 +197,7 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">None</span>
+                        <span className="text-xs text-muted-foreground italic">Không dùng linh kiện</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -196,7 +207,7 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
                       <ExportButton 
                         url={`http://localhost:8080/api/service-requests/${req.id}/export-protocol`} 
                         filename={`handover_protocol_${req.id}.xlsx`} 
-                        label="Protocol" 
+                        label="Xuất biên bản" 
                         size="sm"
                       />
                     </TableCell>

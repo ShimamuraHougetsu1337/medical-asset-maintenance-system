@@ -18,10 +18,10 @@ export default function UnauthorizedPage() {
               <ShieldAlert className="h-12 w-12 text-red-600" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">Access Denied</CardTitle>
+          <CardTitle className="text-2xl font-bold text-gray-900">Truy cập bị từ chối</CardTitle>
           <p className="text-sm text-gray-500 mt-2">
-            You do not have the necessary permissions to access this page. 
-            Please contact your administrator if you believe this is an error.
+            Bạn không có quyền truy cập vào trang này. 
+            Vui lòng liên hệ với quản trị viên nếu bạn nghĩ đây là một sự nhầm lẫn.
           </p>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
@@ -34,14 +34,14 @@ export default function UnauthorizedPage() {
               )}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              Quay lại Trang chủ
             </Link>
             <div className="relative my-2">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground">Or</span>
+                <span className="bg-white px-2 text-muted-foreground">Hoặc</span>
               </div>
             </div>
             <Button 
@@ -53,7 +53,7 @@ export default function UnauthorizedPage() {
               }}
             >
               <LogIn className="mr-2 h-4 w-4" />
-              Sign in with another account
+              Đăng nhập bằng tài khoản khác
             </Button>
           </div>
         </CardContent>

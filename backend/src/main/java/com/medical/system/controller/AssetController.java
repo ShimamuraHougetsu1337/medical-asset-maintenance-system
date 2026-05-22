@@ -57,9 +57,9 @@ public class AssetController {
         return ResponseEntity.ok(ApiResponse.success(dtos, "Assets retrieved successfully"));
     }
 
-    @Operation(summary = "Thêm thiết bị mới (Admin/Manager)")
+    @Operation(summary = "Thêm thiết bị mới (Admin)")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AssetDto>> createAsset(@Valid @RequestBody AssetDto assetDto) {
         com.medical.system.model.entity.Asset asset = com.medical.system.model.entity.Asset.builder()
                 .code(assetDto.getCode())
@@ -72,9 +72,9 @@ public class AssetController {
         return ResponseEntity.ok(ApiResponse.success(mapToDto(saved), "Asset created successfully"));
     }
 
-    @Operation(summary = "Cập nhật thông tin thiết bị (Admin/Manager)")
+    @Operation(summary = "Cập nhật thông tin thiết bị (Admin)")
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AssetDto>> updateAsset(@PathVariable Long id, @Valid @RequestBody AssetDto assetDto) {
         com.medical.system.model.entity.Asset asset = assetRepository.findById(id)
                 .orElseThrow(() -> new com.medical.system.exception.ResourceNotFoundException("Asset not found"));
@@ -96,9 +96,9 @@ public class AssetController {
         return ResponseEntity.ok(ApiResponse.success(null, "Asset deleted successfully"));
     }
 
-    @Operation(summary = "Báo hỏng thiết bị (Doctor/Nurse)")
+    @Operation(summary = "Báo hỏng thiết bị (Doctor)")
     @PostMapping("/{id}/report-failure")
-    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<ServiceRequestDto>> reportFailure(
             @PathVariable Long id,
             @Valid @RequestBody ReportFailureRequest request) {
@@ -151,16 +151,17 @@ public class AssetController {
                 double price = a.getPurchasePrice() != null ? a.getPurchasePrice().doubleValue() : 0.0;
                 row.createCell(2).setCellValue(price);
                 row.createCell(3).setCellValue(a.getPurchaseDate() != null ? a.getPurchaseDate().toString() : "");
-                
-                double depAccum = 0.0;
+                long years = 0;
                 if (a.getPurchaseDate() != null) {
-                    long years = ChronoUnit.YEARS.between(a.getPurchaseDate(), LocalDate.now());
+                    years = ChronoUnit.YEARS.between(a.getPurchaseDate(), LocalDate.now());
                     years = Math.max(0, years);
-                    depAccum = price * 0.10 * years;
-                    depAccum = Math.min(price, depAccum);
                 }
-                row.createCell(4).setCellValue(depAccum);
-                row.createCell(5).setCellValue(price - depAccum);
+                Cell cellDepAccum = row.createCell(4);
+                cellDepAccum.setCellFormula(String.format("MIN(C%d, C%d * 0.10 * %d)", rowIdx, rowIdx, years));
+                
+                Cell cellRemaining = row.createCell(5);
+                cellRemaining.setCellFormula(String.format("C%d - E%d", rowIdx, rowIdx));
+                
                 row.createCell(6).setCellValue(a.getReplacementCost() != null ? a.getReplacementCost().doubleValue() : 0.0);
             }
             workbook.write(out);

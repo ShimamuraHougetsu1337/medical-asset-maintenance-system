@@ -42,23 +42,24 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
 
                         // Staff Management: chỉ ADMIN
                         .requestMatchers("/api/staff/**").hasRole("ADMIN")
 
-                        // Dashboard: chỉ MANAGER và ADMIN
-                        .requestMatchers("/api/dashboard/**").hasAnyRole("MANAGER", "ADMIN")
+                        // Dashboard: chỉ ADMIN
+                        .requestMatchers("/api/dashboard/**").hasRole("ADMIN")
 
                         // Role-based restrictions
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/api/finance/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/assets/*/department").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/assets/*/report-failure").hasAnyRole("DOCTOR", "NURSE", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/assets/*/report-failure").hasAnyRole("DOCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/service-requests/*/assign").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/service-requests/*/complete").hasRole("ENGINEER")
-                        .requestMatchers("/api/service-requests/**").hasAnyRole("ENGINEER", "ADMIN", "MANAGER", "DOCTOR", "NURSE")
-                        .requestMatchers("/api/inventory/**").hasAnyRole("ENGINEER", "ADMIN", "MANAGER")
+                        .requestMatchers("/api/service-requests/**").hasAnyRole("ENGINEER", "ADMIN", "DOCTOR")
+                        .requestMatchers("/api/inventory/**").hasAnyRole("ENGINEER", "ADMIN")
                         .requestMatchers("/api/departments/**").authenticated()
                         .requestMatchers("/api/analytics/**").authenticated()
                         // General secured endpoints

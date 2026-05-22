@@ -30,6 +30,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ExportButton } from "@/components/ui/ExportButton";
+import { Badge } from "@/components/ui/badge";
 
 interface AssetManagementViewProps {
   initialAssets: Asset[];
@@ -85,12 +86,12 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
     }
 
     if (result.success) {
-      toast.success(editingId ? "Asset updated" : "Asset registered");
+      toast.success(editingId ? "Cập nhật thiết bị thành công" : "Đăng ký thiết bị mới thành công");
       setIsDialogOpen(false);
       resetForm();
       router.refresh();
     } else {
-      toast.error(result.message || "Failed to save asset");
+      toast.error(result.message || "Lưu thông tin thiết bị thất bại");
     }
   };
 
@@ -99,7 +100,7 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
     
     const result = await deleteAsset(assetToDelete);
     if (result.success) {
-      toast.success("Asset deleted");
+      toast.success("Đã xóa thiết bị thành công");
       router.refresh();
     } else {
       toast.error(result.message);
@@ -119,14 +120,14 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Monitor className="w-8 h-8 text-blue-600" />
-            Asset Management
+            Quản lý thiết bị
           </h1>
-          <p className="text-muted-foreground mt-1">Register and manage hospital medical equipment and assets.</p>
+          <p className="text-muted-foreground mt-1">Đăng ký và quản lý các thiết bị y tế và tài sản của bệnh viện.</p>
         </div>
 
         <div className="flex items-center gap-2">
-          <ExportButton url="http://localhost:8080/api/finance/assets/export" filename="asset_report.xlsx" label="Export Financials" />
-          <ExportButton url="http://localhost:8080/api/assets/export-depreciation" filename="asset_depreciation.xlsx" label="Export Depreciation" />
+          <ExportButton url="http://localhost:8080/api/finance/assets/export" filename="asset_report.xlsx" label="Xuất báo cáo tài chính" />
+          <ExportButton url="http://localhost:8080/api/assets/export-depreciation" filename="asset_depreciation.xlsx" label="Xuất báo cáo khấu hao" />
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
@@ -135,60 +136,60 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
               render={
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleOpenDialog()}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Register New Asset
+                  Đăng ký thiết bị mới
                 </Button>
               }
             />
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSave}>
               <DialogHeader>
-                <DialogTitle>{editingId ? "Edit Asset" : "Add New Asset"}</DialogTitle>
+                <DialogTitle>{editingId ? "Chỉnh sửa thiết bị" : "Thêm thiết bị mới"}</DialogTitle>
                 <DialogDescription>
-                  Enter the technical details for the medical equipment.
+                  Nhập các thông tin chi tiết kỹ thuật cho thiết bị y tế.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="code">Asset Code</Label>
+                  <Label htmlFor="code">Mã thiết bị</Label>
                   <Input 
                     id="code" 
                     value={formData.code} 
                     onChange={(e) => setFormData({...formData, code: e.target.value})}
-                    placeholder="e.g. MRI-001, VENT-102"
+                    placeholder="Ví dụ: MRI-001, VENT-102"
                     required
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Asset Name</Label>
+                  <Label htmlFor="name">Tên thiết bị</Label>
                   <Input 
                     id="name" 
                     value={formData.name} 
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="e.g. MRI Scanner, Ventilator"
+                    placeholder="Ví dụ: Máy chụp MRI, Máy thở"
                     required
                   />
                 </div>
                 {editingId && (
                   <div className="grid gap-2">
-                    <Label htmlFor="status">Current Status</Label>
+                    <Label htmlFor="status">Trạng thái hiện tại</Label>
                     <select 
                       id="status"
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       value={formData.status}
                       onChange={(e) => setFormData({...formData, status: e.target.value as 'AVAILABLE' | 'BROKEN' | 'UNDER_MAINTENANCE'})}
                     >
-                      <option value="AVAILABLE">Available (Operational)</option>
-                      <option value="UNDER_MAINTENANCE">Under Maintenance</option>
-                      <option value="BROKEN">Broken / Out of Order</option>
-                      <option value="MAINTENANCE_DUE">Maintenance Due (Scheduled)</option>
+                      <option value="AVAILABLE">Sẵn sàng sử dụng (Hoạt động tốt)</option>
+                      <option value="UNDER_MAINTENANCE">Đang bảo trì</option>
+                      <option value="BROKEN">Hỏng hóc / Ngừng hoạt động</option>
+                      <option value="MAINTENANCE_DUE">Đến hạn bảo trì (Theo lịch)</option>
                     </select>
                   </div>
                 )}
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Hủy</Button>
                 <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-                  {editingId ? "Update Asset" : "Save Asset"}
+                  {editingId ? "Cập nhật" : "Lưu thiết bị"}
                 </Button>
               </DialogFooter>
             </form>
@@ -202,7 +203,7 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search by code or name..." 
+              placeholder="Tìm kiếm theo mã hoặc tên thiết bị..." 
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -215,18 +216,18 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead>Asset Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Next Maintenance</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Mã thiết bị</TableHead>
+              <TableHead>Tên thiết bị</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead>Bảo trì tiếp theo</TableHead>
+              <TableHead className="text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAssets.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">
-                  No assets found.
+                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">
+                  Không tìm thấy thiết bị nào.
                 </TableCell>
               </TableRow>
             ) : (
@@ -235,13 +236,18 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
                   <TableCell className="font-mono text-sm font-semibold text-blue-700">{asset.code}</TableCell>
                   <TableCell className="font-medium">{asset.name}</TableCell>
                   <TableCell>
-                    <span className="capitalize">{asset.status.toLowerCase().replace('_', ' ')}</span>
+                    <span className="font-medium text-xs">
+                      {asset.status === 'AVAILABLE' && <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 border">Hoạt động tốt</Badge>}
+                      {asset.status === 'UNDER_MAINTENANCE' && <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 border">Đang bảo trì</Badge>}
+                      {asset.status === 'BROKEN' && <Badge className="bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 border">Hỏng hóc</Badge>}
+                      {asset.status === 'MAINTENANCE_DUE' && <Badge className="bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100 border">Đến hạn bảo trì</Badge>}
+                    </span>
                   </TableCell>
                   <TableCell>
                     {asset.nextMaintenanceDate ? (
                       <span className="text-sm text-muted-foreground">{formatDate(asset.nextMaintenanceDate)}</span>
                     ) : (
-                      <span className="text-xs text-muted-foreground italic">Not set</span>
+                      <span className="text-xs text-muted-foreground italic">Chưa đặt lịch</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -270,9 +276,9 @@ export function AssetManagementView({ initialAssets }: AssetManagementViewProps)
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Asset"
-        description="Are you sure you want to delete this asset? This will also affect any pending service requests."
-        confirmText="Delete Asset"
+        title="Xóa thiết bị"
+        description="Bạn có chắc chắn muốn xóa thiết bị này không? Hành động này cũng sẽ ảnh hưởng đến các phiếu yêu cầu sửa chữa liên quan."
+        confirmText="Xóa thiết bị"
         variant="destructive"
       />
     </div>

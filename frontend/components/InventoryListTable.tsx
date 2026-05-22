@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,26 @@ interface InventoryListTableProps {
 export function InventoryListTable({ items }: InventoryListTableProps) {
   const [query, setQuery] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("ALL");
+  const [threshold, setThreshold] = useState(5);
+
+  useEffect(() => {
+    const handleThresholdUpdate = () => {
+      const saved = localStorage.getItem("system_low_stock_threshold");
+      if (saved) {
+        const val = parseInt(saved, 10);
+        if (!isNaN(val)) {
+          setThreshold(val);
+        }
+      }
+    };
+    handleThresholdUpdate();
+    window.addEventListener("system-low-stock-threshold-updated", handleThresholdUpdate);
+    window.addEventListener("storage", handleThresholdUpdate);
+    return () => {
+      window.removeEventListener("system-low-stock-threshold-updated", handleThresholdUpdate);
+      window.removeEventListener("storage", handleThresholdUpdate);
+    };
+  }, []);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -33,31 +53,31 @@ export function InventoryListTable({ items }: InventoryListTableProps) {
       const matchesQuery = item.partName.toLowerCase().includes(normalizedQuery);
       const matchesStock =
         stockFilter === "ALL" ||
-        (stockFilter === "IN_STOCK" && item.quantity > 5) ||
-        (stockFilter === "LOW_STOCK" && item.quantity > 0 && item.quantity <= 5) ||
+        (stockFilter === "IN_STOCK" && item.quantity > threshold) ||
+        (stockFilter === "LOW_STOCK" && item.quantity > 0 && item.quantity <= threshold) ||
         (stockFilter === "OUT_OF_STOCK" && item.quantity === 0);
 
       return matchesQuery && matchesStock;
     });
-  }, [items, query, stockFilter]);
+  }, [items, query, stockFilter, threshold]);
 
   const getStockLabel = (quantity: number) => {
-    if (quantity === 0) return "out of stock";
-    if (quantity <= 5) return "low stock";
-    return "in stock";
+    if (quantity === 0) return "Hết hàng";
+    if (quantity <= threshold) return "Sắp hết";
+    return "Còn hàng";
   };
 
   const getStockVariant = (quantity: number): "default" | "secondary" | "destructive" | "outline" => {
     if (quantity === 0) return "destructive";
-    if (quantity <= 5) return "outline";
+    if (quantity <= threshold) return "outline";
     return "secondary";
   };
 
   const filterOptions: { label: string; value: StockFilter }[] = [
-    { label: "All", value: "ALL" },
-    { label: "In stock", value: "IN_STOCK" },
-    { label: "Low stock", value: "LOW_STOCK" },
-    { label: "Out", value: "OUT_OF_STOCK" },
+    { label: "Tất cả", value: "ALL" },
+    { label: "Còn hàng", value: "IN_STOCK" },
+    { label: "Sắp hết", value: "LOW_STOCK" },
+    { label: "Hết hàng", value: "OUT_OF_STOCK" },
   ];
 
   return (
@@ -68,7 +88,7 @@ export function InventoryListTable({ items }: InventoryListTableProps) {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search item name"
+            placeholder="Tìm kiếm linh kiện..."
             className="pl-8"
           />
         </div>
@@ -95,16 +115,16 @@ export function InventoryListTable({ items }: InventoryListTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Item Name</TableHead>
-            <TableHead className="text-right">Quantity</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Tên linh kiện</TableHead>
+            <TableHead className="text-right">Số lượng</TableHead>
+            <TableHead>Trạng thái</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredItems.length === 0 ? (
             <TableRow>
               <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">
-                No inventory items match the current filters.
+                Không tìm thấy linh kiện nào phù hợp với bộ lọc.
               </TableCell>
             </TableRow>
           ) : (

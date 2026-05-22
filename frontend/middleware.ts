@@ -11,7 +11,7 @@ export default withAuth(
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    if (path.startsWith("/management") && !["ADMIN", "MANAGER"].includes(token?.role as string)) {
+    if (path.startsWith("/management") && token?.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
     

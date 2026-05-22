@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * Controller cung cấp dữ liệu thống kê cho Dashboard (Giai đoạn 5).
- * Chỉ ADMIN và MANAGER mới được truy cập.
+ * Chỉ ADMIN mới được truy cập.
  */
 @RestController
 @RequestMapping("/api/dashboard")
@@ -33,12 +33,20 @@ public class DashboardController {
     /**
      * Trả về tổng hợp: số lượng thiết bị theo trạng thái + danh sách linh kiện tồn kho thấp.
      */
-    @Operation(summary = "Lấy thống kê tổng hợp cho Dashboard (MANAGER/ADMIN)")
+    @Operation(summary = "Lấy thống kê tổng hợp cho Dashboard (ADMIN)")
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<DashboardStatsDto>> getDashboardStats() {
         DashboardStatsDto stats = schedulerService.getDashboardStats();
         return ResponseEntity.ok(ApiResponse.success(stats, "Dashboard statistics retrieved successfully"));
+    }
+
+    @Operation(summary = "Kích hoạt quét bảo trì thủ công (ADMIN)")
+    @org.springframework.web.bind.annotation.PostMapping("/trigger-scan")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> triggerScan() {
+        schedulerService.generateMaintenanceSchedules();
+        return ResponseEntity.ok(ApiResponse.success(null, "Maintenance scan triggered and executed successfully"));
     }
 
     /**
@@ -46,7 +54,7 @@ public class DashboardController {
      */
     @Operation(summary = "Lấy danh sách thiết bị (DTO, không expose Entity)")
     @GetMapping("/assets")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<AssetDto>>> getAllAssets() {
         List<AssetDto> dtos = assetRepository.findAll().stream()
                 .map(a -> AssetDto.builder()
