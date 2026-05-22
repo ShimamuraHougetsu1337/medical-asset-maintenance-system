@@ -13,6 +13,7 @@ import java.util.Map;
 
 /**
  * Service for handling JWT operations: generation, parsing, and validation.
+ * Handles access tokens only; refresh tokens are managed by RefreshTokenService.
  */
 @Service
 public class JwtService {
@@ -24,12 +25,24 @@ public class JwtService {
     private int jwtExpirationMs;
 
     /**
-     * Generates a token with username and role as a claim.
+     * Generates an access token with username and role as claims.
+     * Alias kept for backward compatibility.
      */
     public String generateToken(String username, String role) {
+        return generateAccessToken(username, role);
+    }
+
+    /**
+     * Generates a signed JWT access token with username and role as claims.
+     *
+     * @param username the subject
+     * @param role     the user's role (stored as a claim)
+     * @return compact JWT string
+     */
+    public String generateAccessToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role); // Include role in payload as requested
-        
+
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)

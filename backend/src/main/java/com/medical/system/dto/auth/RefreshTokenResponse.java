@@ -5,13 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Response body for a successful token refresh.
+ * Returns both a new access token and a rotated refresh token.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponse {
-    private String token;
+public class RefreshTokenResponse {
+
+    private String accessToken;
     private String refreshToken;
-    private String username;
-    private String role;
 }
