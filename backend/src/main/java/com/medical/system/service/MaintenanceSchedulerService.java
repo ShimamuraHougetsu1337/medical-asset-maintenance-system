@@ -36,6 +36,8 @@ public class MaintenanceSchedulerService {
     private final MaintenanceScheduleRepository maintenanceScheduleRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final UserRepository userRepository;
+    private final com.medical.system.mapper.ServiceRequestMapper serviceRequestMapper;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     /**
      * Cron Job chạy lúc 00:00 mỗi ngày.
@@ -71,7 +73,13 @@ public class MaintenanceSchedulerService {
                     .status(RequestStatus.PENDING)
                     .reportedBy(admin)
                     .build();
-            serviceRequestRepository.save(serviceRequest);
+            ServiceRequest savedRequest = serviceRequestRepository.save(serviceRequest);
+            try {
+                com.medical.system.dto.maintenance.ServiceRequestDto dto = serviceRequestMapper.toDto(savedRequest);
+                com.medical.system.config.WebSocketNotificationHandler.broadcast(objectMapper.writeValueAsString(dto));
+            } catch (Exception e) {
+                log.error("Failed to broadcast maintenance service request via WebSocket", e);
+            }
 
             // Cập nhật trạng thái sang MAINTENANCE_DUE để thông báo
             asset.setStatus(AssetStatus.MAINTENANCE_DUE);

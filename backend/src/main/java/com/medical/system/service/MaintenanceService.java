@@ -135,7 +135,13 @@ public class MaintenanceService {
             assetRepository.save(asset);
         }
 
-        return serviceRequestMapper.toDto(serviceRequestRepository.save(serviceRequest));
+        ServiceRequestDto result = serviceRequestMapper.toDto(serviceRequestRepository.save(serviceRequest));
+        try {
+            com.medical.system.config.WebSocketNotificationHandler.broadcast(objectMapper.writeValueAsString(result));
+        } catch (Exception e) {
+            // log or ignore
+        }
+        return result;
     }
 
     /**
@@ -165,7 +171,13 @@ public class MaintenanceService {
             assetRepository.save(asset);
         }
 
-        return serviceRequestMapper.toDto(serviceRequestRepository.save(serviceRequest));
+        ServiceRequestDto result = serviceRequestMapper.toDto(serviceRequestRepository.save(serviceRequest));
+        try {
+            com.medical.system.config.WebSocketNotificationHandler.broadcast(objectMapper.writeValueAsString(result));
+        } catch (Exception e) {
+            // log or ignore
+        }
+        return result;
     }
 
     /**
@@ -254,7 +266,13 @@ public class MaintenanceService {
             assetRepository.save(asset);
         }
 
-        return serviceRequestMapper.toDto(savedRequest);
+        ServiceRequestDto dto = serviceRequestMapper.toDto(savedRequest);
+        try {
+            com.medical.system.config.WebSocketNotificationHandler.broadcast(objectMapper.writeValueAsString(dto));
+        } catch (Exception e) {
+            // log or ignore
+        }
+        return dto;
     }
 
     @Transactional(readOnly = true)

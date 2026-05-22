@@ -65,8 +65,11 @@ export default function RepairsPage() {
   useEffect(() => {
     const unsubscribe = subscribe("new-repair-request", (newRequest: ServiceRequest) => {
       setRequests((prev) => {
-        if (prev.some((r) => r.id === newRequest.id)) {
-          return prev;
+        const index = prev.findIndex((r) => r.id === newRequest.id);
+        if (index > -1) {
+          const updated = [...prev];
+          updated[index] = newRequest;
+          return updated;
         }
         return [newRequest, ...prev];
       });

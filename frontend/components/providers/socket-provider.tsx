@@ -39,7 +39,7 @@ export const SocketProvider = ({ children, userRole }: SocketProviderProps) => {
   };
 
   useEffect(() => {
-    if (userRole !== "ADMIN" && userRole !== "ENGINEER") {
+    if (!userRole) {
       return;
     }
 
@@ -56,19 +56,50 @@ export const SocketProvider = ({ children, userRole }: SocketProviderProps) => {
 
       socket.onmessage = (event) => {
         try {
-          const newRequest = JSON.parse(event.data) as ServiceRequest;
+          const request = JSON.parse(event.data) as ServiceRequest;
           
           if (localStorage.getItem("alert_asset_failure") !== "false") {
-            toast.info(`Yêu cầu sửa chữa mới: ${newRequest.assetName || newRequest.asset?.name || 'Thiết bị'}`, {
-              description: newRequest.description,
-              duration: 6000,
-            });
+            const assetName = request.assetName || request.asset?.name || "Thiết bị";
+            const desc = request.description?.toLowerCase() || "";
+            const isMaintenance = desc.includes("bảo trì") || desc.includes("định kỳ");
+
+            if (request.status === "PENDING") {
+              toast.info(
+                isMaintenance 
+                  ? `Yêu cầu bảo trì mới: ${assetName}` 
+                  : `Yêu cầu sửa chữa mới: ${assetName}`,
+                {
+                  description: request.description,
+                  duration: 6000,
+                }
+              );
+            } else if (request.status === "ASSIGNED") {
+              toast.info(
+                isMaintenance
+                  ? `Cập nhật: Thiết bị ${assetName} bắt đầu bảo trì`
+                  : `Cập nhật: Thiết bị ${assetName} bắt đầu sửa chữa`,
+                {
+                  description: `Kỹ sư phụ trách: ${request.assignedEngineerUsername || "Chưa rõ"}`,
+                  duration: 6000,
+                }
+              );
+            } else if (request.status === "COMPLETED") {
+              toast.success(
+                isMaintenance
+                  ? `Cập nhật: Thiết bị ${assetName} đã hoàn thành bảo trì!`
+                  : `Cập nhật: Thiết bị ${assetName} đã sửa xong!`,
+                {
+                  description: `Đã khôi phục trạng thái hoạt động tốt.`,
+                  duration: 6000,
+                }
+              );
+            }
           }
 
           // Trigger listeners
           const eventListeners = listenersRef.current["new-repair-request"];
           if (eventListeners) {
-            eventListeners.forEach((cb) => cb(newRequest as never));
+            eventListeners.forEach((cb) => cb(request as never));
           }
         } catch (err) {
           console.error("Failed to parse WebSocket message", err);

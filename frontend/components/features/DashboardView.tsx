@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Wrench, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { ServiceRequest } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { useSocket } from "@/components/providers/socket-provider";
 
 
 interface DashboardViewProps {
@@ -11,7 +13,29 @@ interface DashboardViewProps {
   userRole?: string;
 }
 
-export function DashboardView({ requests, userRole }: DashboardViewProps) {
+export function DashboardView({ requests: initialRequests, userRole }: DashboardViewProps) {
+  const [requests, setRequests] = useState<ServiceRequest[]>(initialRequests);
+  const { subscribe } = useSocket();
+
+  useEffect(() => {
+    const unsubscribe = subscribe("new-repair-request", (newRequest: ServiceRequest) => {
+      setRequests((prev) => {
+        const index = prev.findIndex((r) => r.id === newRequest.id);
+        if (index > -1) {
+          const updated = [...prev];
+          updated[index] = newRequest;
+          return updated;
+        }
+        return [newRequest, ...prev];
+      });
+    });
+    return unsubscribe;
+  }, [subscribe]);
+
+  useEffect(() => {
+    setRequests(initialRequests);
+  }, [initialRequests]);
+
   const isManagement = ['ADMIN', 'ENGINEER'].includes(userRole || '');
 
   const pendingCount = requests.filter(r => r.status === 'PENDING').length;
