@@ -24,6 +24,7 @@ export default function RepairsPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [engineers, setEngineers] = useState<User[]>([]);
   const [currentRole, setCurrentRole] = useState<User["role"] | null>(null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,6 +38,7 @@ export default function RepairsPage() {
           ?.split("=")[1];
         const currentUser = userCookie ? JSON.parse(decodeURIComponent(userCookie)) : null;
         setCurrentRole(currentUser?.role ?? null);
+        setCurrentUsername(currentUser?.username ?? null);
 
         const shouldLoadUsers = currentUser?.role === "ADMIN";
         const [reqs, inv, users] = await Promise.all([
@@ -59,7 +61,7 @@ export default function RepairsPage() {
   const handleStartMaintenance = async (id: string | number) => {
     const result = await startMaintenance(id);
     if (result.success) {
-      toast.success("Maintenance started. Asset status updated to UNDER_MAINTENANCE");
+      toast.success("Task registered. Asset status updated to UNDER_MAINTENANCE");
       const [reqs, inv] = await Promise.all([getServiceRequests(), getInventory()]);
       setRequests(reqs);
       setInventory(inv);
@@ -69,6 +71,11 @@ export default function RepairsPage() {
   };
 
   const handleCompleteClick = (request: ServiceRequest) => {
+    if (currentRole === "ENGINEER" && request.assignedEngineerUsername !== currentUsername) {
+      toast.error("You can only complete repair tasks assigned to you");
+      return;
+    }
+
     setSelectedRequest(request);
     setIsModalOpen(true);
   };
@@ -101,8 +108,23 @@ export default function RepairsPage() {
     );
   }
 
-  const activeRequests = requests.filter(r => r.status !== "COMPLETED");
-  const completedRequests = requests.filter(r => r.status === "COMPLETED");
+  const isCurrentEngineerRequest = (request: ServiceRequest) =>
+    request.assignedEngineerUsername === currentUsername ||
+    request.logs?.some((log) => log.engineerUsername === currentUsername);
+
+  const activeRequests = requests.filter((request) => {
+    if (request.status === "COMPLETED") return false;
+    if (currentRole !== "ENGINEER") return true;
+
+    return request.status === "PENDING" || request.assignedEngineerUsername === currentUsername;
+  });
+
+  const completedRequests = requests.filter((request) => {
+    if (request.status !== "COMPLETED") return false;
+    if (currentRole !== "ENGINEER") return true;
+
+    return isCurrentEngineerRequest(request);
+  });
 
   return (
     <div className="space-y-8">
@@ -168,9 +190,9 @@ export default function RepairsPage() {
                         onClick={() => handleStartMaintenance(req.id)}
                       >
                         <Play className="w-4 h-4 mr-2" />
-                        Start
+                        Register
                       </Button>
-                    ) : currentRole === "ENGINEER" && req.status === "ASSIGNED" ? (
+                    ) : currentRole === "ENGINEER" && req.status === "ASSIGNED" && req.assignedEngineerUsername === currentUsername ? (
                       <Button
                         size="sm"
                         onClick={() => handleCompleteClick(req)}
@@ -193,15 +215,15 @@ export default function RepairsPage() {
 
       <div className="space-y-4">
         <h2 className="text-2xl font-bold tracking-tight">Repair History</h2>
-        <div className="rounded-md border shadow-sm bg-card">
-          <Table>
+        <div className="overflow-hidden rounded-md border bg-card shadow-sm">
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>Asset Name</TableHead>
-                <TableHead>Issue</TableHead>
-                <TableHead>Resolution</TableHead>
-                <TableHead>Parts Used</TableHead>
-                <TableHead>Date Completed</TableHead>
+                <TableHead className="w-[18%]">Asset Name</TableHead>
+                <TableHead className="w-[22%]">Issue</TableHead>
+                <TableHead className="w-[34%]">Resolution</TableHead>
+                <TableHead className="w-[16%]">Parts Used</TableHead>
+                <TableHead className="w-[10%]">Date Completed</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -214,25 +236,29 @@ export default function RepairsPage() {
               ) : (
                 completedRequests.map((req) => (
                   <TableRow key={req.id}>
-                    <TableCell className="font-medium">{req.asset?.name ?? req.assetName ?? 'N/A'}</TableCell>
-                    <TableCell className="max-w-xs truncate" title={req.description}>
+                    <TableCell className="align-top font-medium break-words">
+                      {req.asset?.name ?? req.assetName ?? 'N/A'}
+                    </TableCell>
+                    <TableCell className="align-top whitespace-normal break-words" title={req.description}>
                       {req.description}
                     </TableCell>
-                    <TableCell className="max-w-xs">
+                    <TableCell className="align-top">
                       {req.logs && req.logs.length > 0 ? (
-                        <div>
+                        <div className="space-y-1">
                           <p className="text-sm font-semibold text-primary">{req.logs[0].engineerUsername}</p>
-                          <p className="text-sm italic">&quot;{req.logs[0].resolutionDetails}&quot;</p>
+                          <p className="whitespace-normal break-words text-sm italic leading-relaxed">
+                            &quot;{req.logs[0].resolutionDetails}&quot;
+                          </p>
                         </div>
                       ) : (
                         <span className="text-muted-foreground italic">No details provided</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="align-top">
                       {req.logs && req.logs[0]?.usedParts?.length ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap items-start gap-1">
                           {req.logs[0].usedParts.map((p, i) => (
-                            <Badge key={i} variant="outline" className="text-[10px]">
+                            <Badge key={i} variant="outline" className="max-w-full whitespace-normal break-words text-[10px] leading-tight">
                               {p.partName} x{p.quantity}
                             </Badge>
                           ))}
@@ -241,7 +267,7 @@ export default function RepairsPage() {
                         <span className="text-xs text-muted-foreground">None</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="align-top whitespace-normal break-words text-sm">
                       {req.completedAt ? formatDate(req.completedAt) : 'N/A'}
                     </TableCell>
                   </TableRow>

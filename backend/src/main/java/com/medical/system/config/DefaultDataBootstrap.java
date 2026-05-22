@@ -3,12 +3,17 @@ package com.medical.system.config;
 import com.medical.system.model.entity.Asset;
 import com.medical.system.model.entity.Department;
 import com.medical.system.model.entity.Inventory;
+import com.medical.system.model.entity.ServiceLog;
+import com.medical.system.model.entity.ServiceLogPart;
+import com.medical.system.model.entity.ServiceRequest;
 import com.medical.system.model.entity.User;
 import com.medical.system.model.enums.AssetStatus;
+import com.medical.system.model.enums.RequestStatus;
 import com.medical.system.model.enums.Role;
 import com.medical.system.repository.AssetRepository;
 import com.medical.system.repository.DepartmentRepository;
 import com.medical.system.repository.InventoryRepository;
+import com.medical.system.repository.ServiceRequestRepository;
 import com.medical.system.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Component
@@ -30,6 +36,7 @@ public class DefaultDataBootstrap implements CommandLineRunner {
     private final AssetRepository assetRepository;
     private final DepartmentRepository departmentRepository;
     private final InventoryRepository inventoryRepository;
+    private final ServiceRequestRepository serviceRequestRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -39,12 +46,14 @@ public class DefaultDataBootstrap implements CommandLineRunner {
         Map<String, Department> departments = seedDepartmentsIfMissing();
         seedAssetsIfMissing(departments);
         seedInventoryIfMissing();
+        seedRepairHistoryIfMissing();
     }
 
     private void seedUsersIfMissing() {
         createUserIfMissing("admin", "admin123", Role.ADMIN);
         createUserIfMissing("doctor", "doctor123", Role.DOCTOR);
         createUserIfMissing("engineer", "engineer123", Role.ENGINEER);
+        createUserIfMissing("duong", "duong", Role.ENGINEER);
     }
 
     private Map<String, Department> seedDepartmentsIfMissing() {
@@ -145,6 +154,90 @@ public class DefaultDataBootstrap implements CommandLineRunner {
                 .unitCost(unitCost)
                 .build());
         log.info("Created default inventory item: {}", partName);
+    }
+
+    private void seedRepairHistoryIfMissing() {
+        if (serviceRequestRepository.count() > 0) {
+            return;
+        }
+
+        User doctor = userRepository.findByUsername("doctor").orElseThrow();
+        User engineer = userRepository.findByUsername("engineer").orElseThrow();
+
+        createCompletedRepair("AST001", doctor, engineer,
+                "Cooling system alarm during MRI scan",
+                "Cleaned cooling filters and verified stable operating temperature.",
+                8, 18,
+                Map.of("Power Supply Unit", 1));
+
+        createCompletedRepair("AST001", doctor, engineer,
+                "Image calibration drift detected",
+                "Recalibrated imaging module and completed phantom test.",
+                35, 10,
+                Map.of("LCD Display Panel", 1));
+
+        createCompletedRepair("AST005", doctor, engineer,
+                "Intermittent display flicker",
+                "Replaced display panel connector and monitored patient monitor output.",
+                14, 6,
+                Map.of("LCD Display Panel", 1));
+
+        createCompletedRepair("AST003", doctor, engineer,
+                "Probe signal instability",
+                "Checked probe cable, reseated connector, and completed diagnostic scan.",
+                60, 5,
+                Map.of("Oxygen Sensor", 2));
+
+        log.info("Created default repair history for analytics scores");
+    }
+
+    private void createCompletedRepair(
+            String assetCode,
+            User reporter,
+            User engineer,
+            String description,
+            String resolutionDetails,
+            int daysAgo,
+            int downtimeHours,
+            Map<String, Integer> usedParts
+    ) {
+        Asset asset = assetRepository.findByCode(assetCode).orElseThrow();
+        LocalDateTime createdAt = LocalDateTime.now().minusDays(daysAgo);
+        LocalDateTime completedAt = createdAt.plusHours(downtimeHours);
+
+        ServiceRequest request = ServiceRequest.builder()
+                .asset(asset)
+                .reportedBy(reporter)
+                .assignedEngineer(engineer)
+                .description(description)
+                .status(RequestStatus.COMPLETED)
+                .createdAt(createdAt)
+                .completedAt(completedAt)
+                .build();
+
+        ServiceLog log = ServiceLog.builder()
+                .serviceRequest(request)
+                .engineer(engineer)
+                .resolutionDetails(resolutionDetails)
+                .additionalLogData("{\"seed\": true}")
+                .laborHours(BigDecimal.valueOf(Math.max(1, downtimeHours / 2.0)))
+                .hourlyRate(money("250000"))
+                .laborCost(BigDecimal.valueOf(Math.max(1, downtimeHours / 2.0)).multiply(money("250000")))
+                .createdAt(completedAt)
+                .build();
+
+        usedParts.forEach((partName, quantity) ->
+                inventoryRepository.findByPartName(partName).ifPresent(part ->
+                        log.getUsedParts().add(ServiceLogPart.builder()
+                                .serviceLog(log)
+                                .inventory(part)
+                                .quantity(quantity)
+                                .build())
+                )
+        );
+
+        request.getLogs().add(log);
+        serviceRequestRepository.save(request);
     }
 
     private BigDecimal money(String value) {

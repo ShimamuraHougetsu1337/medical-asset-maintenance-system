@@ -121,15 +121,15 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
 
       <div className="space-y-4">
         <h2 className="text-2xl font-bold tracking-tight">Repair History</h2>
-        <div className="rounded-md border shadow-sm bg-card">
-          <Table>
+        <div className="overflow-hidden rounded-md border bg-card shadow-sm">
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>Asset Name</TableHead>
-                <TableHead>Issue</TableHead>
-                <TableHead>Resolution</TableHead>
-                <TableHead>Parts Used</TableHead>
-                <TableHead>Date Completed</TableHead>
+                <TableHead className="w-[18%]">Asset Name</TableHead>
+                <TableHead className="w-[22%]">Issue</TableHead>
+                <TableHead className="w-[34%]">Resolution</TableHead>
+                <TableHead className="w-[16%]">Parts Used</TableHead>
+                <TableHead className="w-[10%]">Date Completed</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -142,25 +142,27 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
               ) : (
                 completedRequests.map((req) => (
                   <TableRow key={req.id}>
-                    <TableCell className="font-medium">{req.assetName}</TableCell>
-                    <TableCell className="max-w-xs truncate" title={req.description}>
+                    <TableCell className="align-top font-medium break-words">{req.assetName}</TableCell>
+                    <TableCell className="align-top whitespace-normal break-words" title={req.description}>
                       {req.description}
                     </TableCell>
-                    <TableCell className="max-w-xs">
+                    <TableCell className="align-top">
                       {req.logs && req.logs.length > 0 ? (
-                        <div>
+                        <div className="space-y-1">
                           <p className="text-sm font-semibold text-primary">{req.logs[0].engineerUsername}</p>
-                          <p className="text-sm italic">&quot;{req.logs[0].resolutionDetails}&quot;</p>
+                          <p className="whitespace-normal break-words text-sm italic leading-relaxed">
+                            &quot;{req.logs[0].resolutionDetails}&quot;
+                          </p>
                         </div>
                       ) : (
                         <span className="text-muted-foreground italic">No details provided</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="align-top">
                       {req.logs && req.logs[0]?.usedParts?.length ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap items-start gap-1">
                           {req.logs[0].usedParts.map((p, i) => (
-                            <Badge key={i} variant="outline" className="text-[10px]">
+                            <Badge key={i} variant="outline" className="max-w-full whitespace-normal break-words text-[10px] leading-tight">
                               {p.partName} x{p.quantity}
                             </Badge>
                           ))}
@@ -169,7 +171,7 @@ export function RepairsView({ initialRequests, inventory }: RepairsViewProps) {
                         <span className="text-xs text-muted-foreground">None</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="align-top whitespace-normal break-words text-sm">
                       {req.completedAt ? formatDate(req.completedAt) : 'N/A'}
                     </TableCell>
                   </TableRow>

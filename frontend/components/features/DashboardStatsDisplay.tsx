@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { DashboardStats, ServiceRequest } from "@/types";
 import {
   PieChart,
@@ -20,6 +21,7 @@ import {
   ClipboardList,
   TrendingDown,
   Clock,
+  ChevronDown,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -39,6 +41,7 @@ const PIE_COLORS: Record<string, string> = {
 
 export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
   const { assetStats, lowStockAlerts } = stats;
+  const [expandedRequestId, setExpandedRequestId] = useState<string | number | null>(null);
 
   // Dữ liệu cho Pie Chart thiết bị theo trạng thái
   const pieData = [
@@ -253,35 +256,89 @@ export function DashboardStatsDisplay({ stats, requests, schedules }: Props) {
               </div>
             ) : (
               <div className="space-y-3">
-                {requests.slice(0, 6).map((req) => (
-                  <div
-                    key={req.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 bg-blue-100 rounded-full">
-                        <Wrench className="h-3.5 w-3.5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">{req.assetName}</p>
-                        <p className="text-xs text-muted-foreground truncate max-w-xs">
-                          {req.description}
-                        </p>
-                      </div>
+                {requests.slice(0, 6).map((req) => {
+                  const isExpanded = expandedRequestId === req.id;
+                  const latestLog = req.logs?.[0];
+
+                  return (
+                    <div key={req.id} className="rounded-lg bg-muted/30 border">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 p-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => setExpandedRequestId(isExpanded ? null : req.id)}
+                        aria-expanded={isExpanded}
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="p-1.5 bg-blue-100 rounded-full">
+                            <Wrench className="h-3.5 w-3.5 text-blue-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold">{req.assetName}</p>
+                            <p className="truncate text-xs text-muted-foreground max-w-xs">
+                              {req.description}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Badge
+                            variant={
+                              req.status === "COMPLETED"
+                                ? "secondary"
+                                : req.status === "PENDING"
+                                ? "destructive"
+                                : "default"
+                            }
+                          >
+                            {req.status}
+                          </Badge>
+                          <ChevronDown
+                            className={`h-4 w-4 text-muted-foreground transition-transform ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          />
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="border-t px-3 py-3 text-sm">
+                          <dl className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <dt className="text-xs font-medium uppercase text-muted-foreground">Reported by</dt>
+                              <dd className="mt-1">{req.reportedByUsername ?? "N/A"}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs font-medium uppercase text-muted-foreground">Engineer</dt>
+                              <dd className="mt-1">{req.assignedEngineerUsername ?? "Unassigned"}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs font-medium uppercase text-muted-foreground">Date reported</dt>
+                              <dd className="mt-1">{req.createdAt ? formatDate(req.createdAt) : "N/A"}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs font-medium uppercase text-muted-foreground">Completed at</dt>
+                              <dd className="mt-1">{req.completedAt ? formatDate(req.completedAt) : "Not completed"}</dd>
+                            </div>
+                          </dl>
+                          {latestLog && (
+                            <div className="mt-3 rounded-md bg-background p-3">
+                              <p className="text-xs font-medium uppercase text-muted-foreground">Latest repair log</p>
+                              <p className="mt-1 text-sm">{latestLog.resolutionDetails}</p>
+                              {latestLog.usedParts?.length ? (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {latestLog.usedParts.map((part, index) => (
+                                    <Badge key={`${part.partName}-${index}`} variant="outline" className="text-[10px]">
+                                      {part.partName} x{part.quantity}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <Badge
-                      variant={
-                        req.status === "COMPLETED"
-                          ? "secondary"
-                          : req.status === "PENDING"
-                          ? "destructive"
-                          : "default"
-                      }
-                    >
-                      {req.status}
-                    </Badge>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

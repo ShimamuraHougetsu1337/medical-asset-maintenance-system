@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Wrench, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { ServiceRequest } from "@/types";
@@ -108,13 +109,17 @@ export function DashboardView({ requests, userRole }: DashboardViewProps) {
           <CardContent>
              <div className="space-y-4">
               {requests.filter(r => r.status === 'PENDING').slice(0, 4).map(req => (
-                <div key={req.id} className="flex items-center gap-3">
+                <Link
+                  key={req.id}
+                  href="/repairs"
+                  className="flex items-center gap-3 rounded-md p-2 -m-2 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   <div className="h-2 w-2 rounded-full bg-red-500" />
                   <div className="flex-1">
                     <p className="text-sm font-medium">{req.assetName}</p>
                     <p className="text-xs text-muted-foreground truncate">{req.description}</p>
                   </div>
-                </div>
+                </Link>
               ))}
               {pendingCount > 4 && (
                 <p className="text-xs text-center text-muted-foreground">+{pendingCount - 4} more pending requests</p>

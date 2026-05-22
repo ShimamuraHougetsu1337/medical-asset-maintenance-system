@@ -12,6 +12,7 @@ import com.medical.system.mapper.ServiceRequestMapper;
 import com.medical.system.model.entity.*;
 import com.medical.system.model.enums.AssetStatus;
 import com.medical.system.model.enums.RequestStatus;
+import com.medical.system.model.enums.Role;
 import com.medical.system.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -67,7 +68,11 @@ public class MaintenanceService {
 
     @Transactional(readOnly = true)
     public List<ServiceRequestDto> getAllServiceRequests() {
+        User currentUser = getCurrentUser();
+
         return serviceRequestRepository.findAll().stream()
+                .filter(serviceRequest -> currentUser.getRole() != Role.ENGINEER
+                        || isVisibleToEngineer(serviceRequest, currentUser))
                 .map(serviceRequestMapper::toDto)
                 .toList();
     }
@@ -110,6 +115,11 @@ public class MaintenanceService {
 
         if (serviceRequest.getStatus() != RequestStatus.PENDING) {
             throw new BusinessException("Request is already " + serviceRequest.getStatus());
+        }
+
+        User currentUser = getCurrentUser();
+        if (currentUser.getRole() == Role.ENGINEER) {
+            serviceRequest.setAssignedEngineer(currentUser);
         }
 
         serviceRequest.setStatus(RequestStatus.ASSIGNED);
@@ -171,13 +181,16 @@ public class MaintenanceService {
             throw new BusinessException("Repair request must be assigned to an engineer before completion");
         }
 
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User engineer = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        User engineer = getCurrentUser();
 
-        if (serviceRequest.getAssignedEngineer() != null
-                && !serviceRequest.getAssignedEngineer().getId().equals(engineer.getId())) {
-            throw new BusinessException("Repair request is assigned to another engineer");
+        if (engineer.getRole() == Role.ENGINEER) {
+            if (serviceRequest.getAssignedEngineer() == null) {
+                throw new BusinessException("Repair request is not assigned to you");
+            }
+
+            if (!serviceRequest.getAssignedEngineer().getId().equals(engineer.getId())) {
+                throw new BusinessException("Repair request is assigned to another engineer");
+            }
         }
 
         // Create Service Log
@@ -260,5 +273,27 @@ public class MaintenanceService {
             return request.getLaborHours().multiply(request.getHourlyRate());
         }
         return BigDecimal.ZERO;
+    }
+
+    private User getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+    }
+
+    private boolean isVisibleToEngineer(ServiceRequest serviceRequest, User engineer) {
+        if (serviceRequest.getStatus() == RequestStatus.PENDING) {
+            return true;
+        }
+
+        if (serviceRequest.getAssignedEngineer() != null
+                && serviceRequest.getAssignedEngineer().getId().equals(engineer.getId())) {
+            return true;
+        }
+
+        return serviceRequest.getLogs() != null
+                && serviceRequest.getLogs().stream()
+                        .anyMatch(log -> log.getEngineer() != null
+                                && log.getEngineer().getId().equals(engineer.getId()));
     }
 }
