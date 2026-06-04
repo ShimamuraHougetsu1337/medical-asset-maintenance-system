@@ -15,14 +15,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Testcontainers
 public abstract class AbstractIntegrationTest {
 
-    @Container
-    static MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.0.33")
-            .withDatabaseName("medical_test_db")
-            .withUsername("testuser")
-            .withPassword("testpass");
+    static final MySQLContainer<?> mysqlContainer;
+
+    static {
+        mysqlContainer = new MySQLContainer<>("mysql:8.0.33")
+                .withDatabaseName("medical_test_db")
+                .withUsername("testuser")
+                .withPassword("testpass");
+        mysqlContainer.start();
+    }
 
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
