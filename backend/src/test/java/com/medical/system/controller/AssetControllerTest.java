@@ -44,7 +44,7 @@ class AssetControllerTest extends AbstractIntegrationTest {
         // Act & Assert
         mockMvc.perform(get("/api/assets"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.data[0].code").value("TEST-001"));
     }
 
@@ -63,7 +63,7 @@ class AssetControllerTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(assetDto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.code").value("NEW-002"))
                 .andExpect(jsonPath("$.data.name").value("New Machine"));
     }

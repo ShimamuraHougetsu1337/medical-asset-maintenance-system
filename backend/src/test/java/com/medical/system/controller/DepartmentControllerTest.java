@@ -38,7 +38,7 @@ class DepartmentControllerTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/departments")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.data[0].code").value("CARDIO"))
                 .andExpect(jsonPath("$.data[0].name").value("Cardiology"));
     }
