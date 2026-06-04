@@ -28,7 +28,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import org.springframework.context.annotation.Profile;
+
 @Component
+@Profile("!test")
 @RequiredArgsConstructor
 @Slf4j
 public class DefaultDataBootstrap implements CommandLineRunner {
